@@ -46,7 +46,7 @@ while resultsCount > 0 :
 
 import bz2
 from shutil import copyfileobj
-with bz2.BZ2File(fn+'bz2', 'wb', compresslevel=9) as output:
+with bz2.BZ2File(fn+'.bz2', 'wb', compresslevel=9) as output:
     copyfileobj(file, output)
 
 import os
