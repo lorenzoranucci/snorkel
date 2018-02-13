@@ -1,4 +1,3 @@
-import os
 from SPARQLWrapper import SPARQLWrapper, JSON
 
 subjectType="Person"
@@ -16,7 +15,7 @@ writer = csv.writer(file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMA
 sparql = SPARQLWrapper("https://dbpedia.org/sparql")
 
 querySelect="""
-SELECT  ?subjectLabel ?objectLabel \n
+SELECT DISTINCT ?subjectLabel ?objectLabel \n
 """
 queryWhere="""
 WHERE{
@@ -44,5 +43,13 @@ while resultsCount > 0 :
             writer.writerow([subject,object])
         except Exception as e : print(e)
     offset+=resultsCount
+
+import bz2
+from shutil import copyfileobj
+with bz2.BZ2File(fn+'bz2', 'wb', compresslevel=9) as output:
+    copyfileobj(file, output)
+
+import os
+os.remove(file.name)
 
 
