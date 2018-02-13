@@ -1,0 +1,54 @@
+
+
+#TIPI DISTINTI DI SOGGETTO E OGGETTO PER UN PREDICATO
+select distinct ?typeS ?typeO
+where{
+?s <http://dbpedia.org/ontology/country> ?o.
+?s a ?typeS.
+?o a ?typeO.
+}
+
+#TUTTE LE COPPIE SOGGETTO OGGETTO DI UN PREDICATO E DI UN TIPO DI SOGGETTO E DI UN TIPO DI OGGETTO
+select distinct ?s ?o
+where{
+?s <http://dbpedia.org/ontology/country> ?o.
+?s a <http://xmlns.com/foaf/0.1/Person>.
+?o a <http://dbpedia.org/ontology/Country>
+}
+
+
+
+
+#COPPIE DI TIPI DI SOGGETTO E OGGETTO PIÙ COMUNI PER UN PREDICATO
+SELECT ?typeCouple COUNT (?typeCouple) AS ?typeCoupleCount
+WHERE{
+    ?s <http://dbpedia.org/ontology/country> ?o.
+    ?s a ?typeS.
+    ?o a ?typeO.
+    BIND(CONCAT(?typeS , ?typeO) AS ?typeCouple).
+}
+ORDER BY DESC(?typeCoupleCount)
+
+
+#LABEL DEL SOGGETTO IN CHUNK
+select  ?subjectLabel ?o
+where{
+?s <http://dbpedia.org/ontology/birthDate> ?o.
+?s a <http://xmlns.com/foaf/0.1/Person>.
+?s <http://www.w3.org/2000/01/rdf-schema#label> ?subjectLabel .
+FILTER (lang(?subjectLabel) = 'en')
+}
+offset 0
+limit 10000
+
+#LABEL DEL SOGGETTO e dell oggetto IN CHUNK
+select  distinct ?subjectLabel ?objectLabel
+where{
+?s <http://dbpedia.org/ontology/country> ?o.
+?s <http://www.w3.org/2000/01/rdf-schema#label> ?subjectLabel.
+?o <http://www.w3.org/2000/01/rdf-schema#label> ?objectLabel.
+FILTER (lang(?subjectLabel) = 'en' ).
+FILTER (lang(?objectLabel) = 'en' )
+}
+OFFSET 0
+LIMIT 1000
