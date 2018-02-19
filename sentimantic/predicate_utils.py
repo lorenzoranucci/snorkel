@@ -3,7 +3,6 @@ from type_utils import get_namedentity
 from models import get_sentimanctic_session, Type
 from sqlalchemy.exc import IntegrityError
 from models import get_sentimanctic_session, Predicate, BinaryCandidate, PredicateCandidateAssoc
-from predicate_utils import get_predicate_domains, get_predicate_ranges, count_predicate_samples
 
 
 def save_predicate(predicate_URI):
