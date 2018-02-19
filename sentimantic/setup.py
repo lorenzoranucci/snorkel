@@ -1,5 +1,5 @@
 from sqlalchemy.exc import IntegrityError
-from models import create_database, get_sentimanctic_session, Predicate, NamedEntity, Type, TypeNamedEntityAssoc
+from models import create_database, get_sentimanctic_session, NamedEntity, Type, TypeNamedEntityAssoc
 
 create_database()
 SentimanticSession=get_sentimanctic_session()
@@ -38,47 +38,4 @@ for ne_type in ne_type_list:
         print("Integrity error")
         sentimantic_session.rollback()
 
-predicates_list = ["http://dbpedia.org/ontology/country",
-                  "http://dbpedia.org/ontology/birthDate",
-                  "http://dbpedia.org/ontology/location",
-                  "http://dbpedia.org/ontology/isPartOf",
-                  "http://dbpedia.org/ontology/team",
-                  "http://dbpedia.org/ontology/deathPlace",
-                  "http://dbpedia.org/ontology/almaMater",
-                  "http://dbpedia.org/ontology/league",
-                  "http://dbpedia.org/ontology/city",
-                  "http://dbpedia.org/ontology/starring",
-                  "http://dbpedia.org/ontology/party",
-                  "http://dbpedia.org/ontology/parent",
-                  "http://dbpedia.org/ontology/spouse",
-                  "http://dbpedia.org/ontology/award",
-                  "http://dbpedia.org/ontology/network",
-                  "http://dbpedia.org/ontology/hometown",
-                  "http://dbpedia.org/ontology/formerTeam",
-                  "http://dbpedia.org/ontology/recordLabel"
-                  ]
 
-for predicateURI in predicates_list:
-    try:
-        new_predicate=Predicate(uri=predicateURI)
-        sentimantic_session.add(new_predicate)
-        sentimantic_session.commit()
-    except IntegrityError:
-        print("Integrity error")
-        sentimantic_session.rollback()
-    # predicateSplit=predicateURI.split('/')
-    # predicateSplitLen= len(predicateSplit)
-    # predicate=predicateSplit[predicateSplitLen-1]
-    # #retrieve predicate domain
-    # domains=get_predicate_domains(predicateURI)
-    # #retrieve predicate range
-    # ranges=get_predicate_ranges(predicateURI)
-    # samplesCount=count_predicate_samples(predicateURI)
-    # for domain in domains:
-    #     subjectType=domain["namedEntityType"]
-    #     for range in ranges:
-    #         objectType=range["namedEntityType"]
-
-
-
-from entityTypes import getNamedEntityType
