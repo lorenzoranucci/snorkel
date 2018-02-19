@@ -32,7 +32,7 @@
 from models import  get_sentimanctic_session, TypeNamedEntityAssoc
 
 
-def get_namedentity(type_URI, kb_sparql_endpoint="https://dbpedia.org/sparql"):
+def get_namedentity(type_URI, kb_sparql_endpoint="https://dbpedia.org/sparql", defaultGraph="http://dbpedia.org"):
     result = get_named_entity_type_base(type_URI)
     class_type = type_URI
     while (result == None and class_type != None):
@@ -49,13 +49,13 @@ def get_named_entity_type_base(type_URI):
         return type_ne.namedentity
 
 
-def get_superclass_type(type_URI, kb_sparql_endpoint="https://dbpedia.org/sparql"):
+def get_superclass_type(type_URI, kb_sparql_endpoint="https://dbpedia.org/sparql", defaultGraph="http://dbpedia.org"):
     from SPARQLWrapper import SPARQLWrapper, JSON
-    sparql = SPARQLWrapper(kb_sparql_endpoint)
+    sparql = SPARQLWrapper(kb_sparql_endpoint, defaultGraph=defaultGraph)
     query = """
     select ?superClass
     where{
-    """ + type_URI + """ <http://www.w3.org/2000/01/rdf-schema#subClassOf> ?superClass.}
+    <"""+ type_URI + """> <http://www.w3.org/2000/01/rdf-schema#subClassOf> ?superClass.}
     """
     sparql.setQuery(query)
     sparql.setReturnFormat(JSON)
