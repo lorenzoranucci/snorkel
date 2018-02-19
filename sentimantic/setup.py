@@ -10,7 +10,10 @@ ne_type_list = [
                 ["DATE", "http://www.w3.org/2001/XMLSchema#date"],
                 ["GPE", "http://dbpedia.org/ontology/Place"],
                 ["ORG", "http://dbpedia.org/ontology/Organisation"],
-                ["EVENT", "http://dbpedia.org/ontology/Event"]
+                ["EVENT", "http://dbpedia.org/ontology/Event"],
+                ["WORK_OF_ART", "http://dbpedia.org/ontology/Work"],
+                ["LANGUAGE", "http://dbpedia.org/ontology/Language"],
+                ["ORG", "http://dbpedia.org/ontology/Award"]
             ]
 
 for ne_type in ne_type_list:
