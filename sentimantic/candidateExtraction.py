@@ -11,6 +11,9 @@ import logging
 
 def extract_binary_candidates(candidates):
     logging.info("Candidates extraction start")
+    parallelism=None
+    if 'SNORKELDB' in os.environ and os.environ['SNORKELDB'] != '':
+        parallelism=20
     candidate_list=[]
     for candidate in candidates:
         subject_ne=candidate.subject_namedentity
@@ -30,7 +33,7 @@ def extract_binary_candidates(candidates):
         candidate_list.append({"extractor":cand_extractor,"subclass":CandidateSubclass})
 
     clear=True
-    page=10000
+    page=200000
     start=1
     i=1
     while(True):
@@ -51,7 +54,7 @@ def extract_binary_candidates(candidates):
         sents=session.query(Sentence).order_by(Sentence.id).slice(start,start+page).all()
         if sents == None or len(sents) < 1 : break
         for candidate in candidate_list:
-            candidate["extractor"].apply(sents, split=split, clear=clear, progress_bar=False)
+            candidate["extractor"].apply(sents, split=split, clear=clear, progress_bar=False, parallelism=parallelism)
             extracted_count=session.query(candidate["subclass"]).filter(candidate["subclass"].split == split).count()
             logging.debug('\t\t%d candidates extracted for %s', extracted_count, candidate["subclass"].__name__)
         start=start+page
