@@ -165,6 +165,7 @@ class UDF(Process):
                     else:
                         self.session.add(y)
                 self.in_queue.task_done()
+                self.session.flush()
             except Empty:
                 break
         self.session.commit()
