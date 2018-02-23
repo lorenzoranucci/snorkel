@@ -1,8 +1,10 @@
 from SPARQLWrapper import SPARQLWrapper, JSON
+
 from type_utils import get_namedentity
-from models import get_sentimanctic_session, Type
+from models import get_sentimanctic_session, Type, TypeNamedEntityAssoc
 from sqlalchemy.exc import IntegrityError
 from models import get_sentimanctic_session, Predicate, BinaryCandidate, PredicateCandidateAssoc
+from snorkel.models import candidate_subclass
 
 
 def save_predicate(predicate_URI):
@@ -16,6 +18,56 @@ def save_predicate(predicate_URI):
     except IntegrityError:
         print("Integrity error")
         sentimantic_session.rollback()
+
+def get_predicate_candidates_and_samples_file(predicate_URI):
+    SentimanticSession = get_sentimanctic_session()
+    sentimantic_session = SentimanticSession()
+    predicate_URI=predicate_URI.strip()
+    pca_list=sentimantic_session.query(PredicateCandidateAssoc) \
+        .filter(PredicateCandidateAssoc.predicate_id == predicate_URI).all()
+    result=[]
+    for pca in pca_list:
+        candidate=sentimantic_session.query(BinaryCandidate) \
+            .filter(BinaryCandidate.id==pca.candidate_id).first()
+        subject_ne=candidate.subject_namedentity.strip()
+        object_ne=candidate.object_namedentity.strip()
+        candidate_name=(subject_ne+object_ne).encode("utf-8")
+        CandidateSubclass = candidate_subclass(candidate_name,
+                                               ["subject_"+subject_ne.lower(),
+                                                "object_"+object_ne.lower()
+                                                ])
+        result.append({"candidate_subclass":CandidateSubclass, "samples_file_path":pca.samples_file_path})
+    return result
+
+def get_predicate_resume(predicate_URI):
+    result=[]
+    SentimanticSession = get_sentimanctic_session()
+    sentimantic_session = SentimanticSession()
+    predicate_URI=predicate_URI.strip()
+    pca_list=sentimantic_session.query(PredicateCandidateAssoc) \
+        .filter(PredicateCandidateAssoc.predicate_id == predicate_URI).all()
+    for pca in pca_list:
+        candidate=sentimantic_session.query(BinaryCandidate) \
+            .filter(BinaryCandidate.id==pca.candidate_id).first()
+        subject_ne=candidate.subject_namedentity.strip()
+        object_ne=candidate.object_namedentity.strip()
+        candidate_name=(subject_ne+object_ne).encode("utf-8")
+        CandidateSubclass = candidate_subclass(candidate_name,
+                                               ["subject_"+subject_ne.lower(),
+                                                "object_"+object_ne.lower()
+                                                ])
+        subject_type=sentimantic_session.query(TypeNamedEntityAssoc) \
+            .filter(TypeNamedEntityAssoc.namedentity == subject_ne).first().type
+        object_type=sentimantic_session.query(TypeNamedEntityAssoc) \
+            .filter(TypeNamedEntityAssoc.namedentity == object_ne).first().type
+        result.append({"predicate_URI": predicate_URI,
+                       "candidate_subclass": CandidateSubclass,
+                       "subject_ne":subject_ne, "object_ne":object_ne,
+                       "subject_type":subject_type, "object_type":object_type,
+                       "samples_file_path": pca.samples_file_path})
+    return result;
+
+
 
 def infer_and_save_predicate_candidates_types(predicate_URI):
     SentimanticSession=get_sentimanctic_session()
@@ -231,55 +283,78 @@ def get_types_filter_regex():
 
     return filter
 
-# def get_predicate_samples_from_KB(predicate_URI, domain, range, kb_SPARQL_endpoint="https://dbpedia.org/sparql",
-#                                   defaultGraph="http://dbpedia.org"):
-#     sparql = SPARQLWrapper(kb_SPARQL_endpoint, defaultGraph=defaultGraph)
-#     predicate_split = predicate_URI.split('/')
-#     predicate_split_len = len(predicate_split)
-#     predicate = predicate_split[predicate_split_len - 1]
-#     # create file for output
-#     name = predicate + domain + range
-#     fn = "./data/" + name + ".csv"
-#     file = open(fn, 'a+')
-#     import csv
-#     writer = csv.writer(file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-#
-#     # build query
-#     query_select = """
-#     SELECT DISTINCT ?subjectLabel ?objectLabel \n
-#     """
-#     query_where = """
-#     WHERE{
-#         ?s <""" + predicate_URI + """> ?objectLabel.
-#         ?s a <""" + domain[1] + """>.
-#         ?s <http://www.w3.org/2000/01/rdf-schema#label> ?subjectLabel .
-#         FILTER (lang(?subjectLabel) = 'en')
-#     }\n
-#     """
-#     offset = 0
-#     query_offset = "OFFSET "
-#     query_limit = "LIMIT 10000"
-#     results_count = 1
-#     while results_count > 0 and results_count <= 1000:
-#         query = query_select + query_where + query_offset + str(offset) + " \n" + query_limit
-#         print(query)
-#         sparql.setQuery(query)
-#         sparql.setReturnFormat(JSON)
-#         results = sparql.query().convert()
-#         results_count = len(results["results"]["bindings"])
-#         for result in results["results"]["bindings"]:
-#             try:
-#                 subject = result["subjectLabel"]["value"].encode('utf-8').strip().replace(",", "").replace("\"", "")
-#                 object = result["objectLabel"]["value"].encode('utf-8').strip().replace(",", "").replace("\"", "")
-#                 writer.writerow([subject, object])
-#             except Exception as e:
-#                 print(e)
-#         offset += results_count
-#
-#     import bz2
-#     from shutil import copyfileobj
-#     with bz2.BZ2File(fn + '.bz2', 'wb', compresslevel=9) as output:
-#         copyfileobj(file, output)
-#
-#     import os
-#     os.remove(file.name)
+def get_predicate_samples_from_KB(predicate_URI, domain, range, kb_SPARQL_endpoint="https://dbpedia.org/sparql",
+                                  defaultGraph="http://dbpedia.org"):
+    sparql = SPARQLWrapper(kb_SPARQL_endpoint, defaultGraph=defaultGraph)
+    predicate_resumes=get_predicate_resume(predicate_URI)
+    predicate_resume=None
+    for predicate_resume_tmp in predicate_resumes:
+        if predicate_resume_tmp["subject_type"]==domain and predicate_resume_tmp["object_type"]==range :
+            predicate_resume=predicate_resume_tmp
+            break
+
+    file = open(predicate_resume["samples_file_path"], 'a+')
+    import csv
+    writer = csv.writer(file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+
+    # build query
+    object_type_filter=""
+    object_variable="objectLabel"
+    if (predicate_resume["object_ne"]!="DATE"):
+        object_type_filter=""" 
+        ?o a <""" + range + """>. 
+        ?o <http://www.w3.org/2000/01/rdf-schema#label> ?objectLabel .
+        FILTER (lang(?objectLabel) = 'en'). 
+        """
+        object_variable="o"
+
+    query_select = """
+    SELECT DISTINCT ?subjectLabel ?objectLabel
+    """
+    query_where = """
+    WHERE{
+        ?s <""" + predicate_URI + """> ?"""+object_variable+""" .
+        ?s a <""" + domain + """>.
+        """+object_type_filter+"""
+        ?s <http://www.w3.org/2000/01/rdf-schema#label> ?subjectLabel .
+        FILTER (lang(?subjectLabel) = 'en')
+    }\n
+    """
+    offset = 0
+    query_offset = "OFFSET "
+    query_limit = "LIMIT 10000"
+    results_count = 1
+    while results_count > 0 :
+        query = query_select + query_where + query_offset + str(offset) + " \n" + query_limit
+        print(query)
+        sparql.setQuery(query)
+        sparql.setReturnFormat(JSON)
+        results = sparql.query().convert()
+        results_count = len(results["results"]["bindings"])
+        for result in results["results"]["bindings"]:
+            try:
+                subject = result["subjectLabel"]["value"].encode('utf-8').strip().replace(",", "").replace("\"", "")
+                object = result["objectLabel"]["value"].encode('utf-8').strip().replace(",", "").replace("\"", "")
+                writer.writerow([subject, object])
+            except Exception as e:
+                print(e)
+        offset += results_count
+    #import bz2
+    #from shutil import copyfileobj
+    #with bz2.BZ2File(predicate_resume["samples_file_path"] + '.bz2', 'wb', compresslevel=9) as output:
+    #    copyfileobj(file, output)
+    #import os
+    #os.remove(file.name)
+
+def set_predicates_candidate_file_path(base_path="./data/samples/"):
+    SentimanticSession=get_sentimanctic_session()
+    session=SentimanticSession()
+    pca_list=session.query(PredicateCandidateAssoc).all()
+    for pca in pca_list:
+        candidate=session.query(BinaryCandidate).filter(BinaryCandidate.id==pca.candidate_id).first()
+        predicate_split = pca.predicate_id.split('/')
+        predicate_split_len = len(predicate_split)
+        predicate = predicate_split[predicate_split_len - 1].strip()
+        pca.samples_file_path=base_path+predicate+candidate.subject_namedentity.title()+candidate.object_namedentity.title()+".csv"
+        session.flush()
+    session.commit()
