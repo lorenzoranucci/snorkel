@@ -1,3 +1,4 @@
+import logging
 from SPARQLWrapper import SPARQLWrapper, JSON
 
 from type_utils import get_namedentity
@@ -8,6 +9,7 @@ from snorkel.models import candidate_subclass
 
 
 def save_predicate(predicate_URI):
+    logging.info('Saving predicate "%s"', predicate_URI)
     SentimanticSession=get_sentimanctic_session()
     sentimantic_session=SentimanticSession()
     predicate_URI=predicate_URI.strip()
@@ -16,60 +18,45 @@ def save_predicate(predicate_URI):
         sentimantic_session.add(new_predicate)
         sentimantic_session.commit()
     except IntegrityError:
-        print("Integrity error")
+        logging.warn('Predicate "%s" already existing', predicate_URI )
         sentimantic_session.rollback()
+    logging.info('Predicate "%s" saved', predicate_URI)
 
-def get_predicate_candidates_and_samples_file(predicate_URI):
-    SentimanticSession = get_sentimanctic_session()
-    sentimantic_session = SentimanticSession()
-    predicate_URI=predicate_URI.strip()
-    pca_list=sentimantic_session.query(PredicateCandidateAssoc) \
-        .filter(PredicateCandidateAssoc.predicate_id == predicate_URI).all()
-    result=[]
-    for pca in pca_list:
-        candidate=sentimantic_session.query(BinaryCandidate) \
-            .filter(BinaryCandidate.id==pca.candidate_id).first()
-        subject_ne=candidate.subject_namedentity.strip()
-        object_ne=candidate.object_namedentity.strip()
-        candidate_name=(subject_ne+object_ne).encode("utf-8")
-        CandidateSubclass = candidate_subclass(candidate_name,
-                                               ["subject_"+subject_ne.lower(),
-                                                "object_"+object_ne.lower()
-                                                ])
-        result.append({"candidate_subclass":CandidateSubclass, "samples_file_path":pca.samples_file_path})
-    return result
 
 def get_predicate_resume(predicate_URI):
     result=[]
     SentimanticSession = get_sentimanctic_session()
     sentimantic_session = SentimanticSession()
-    predicate_URI=predicate_URI.strip()
-    pca_list=sentimantic_session.query(PredicateCandidateAssoc) \
-        .filter(PredicateCandidateAssoc.predicate_id == predicate_URI).all()
-    for pca in pca_list:
-        candidate=sentimantic_session.query(BinaryCandidate) \
-            .filter(BinaryCandidate.id==pca.candidate_id).first()
-        subject_ne=candidate.subject_namedentity.strip()
-        object_ne=candidate.object_namedentity.strip()
-        candidate_name=(subject_ne+object_ne).encode("utf-8")
-        CandidateSubclass = candidate_subclass(candidate_name,
-                                               ["subject_"+subject_ne.lower(),
-                                                "object_"+object_ne.lower()
-                                                ])
-        subject_type=sentimantic_session.query(TypeNamedEntityAssoc) \
-            .filter(TypeNamedEntityAssoc.namedentity == subject_ne).first().type
-        object_type=sentimantic_session.query(TypeNamedEntityAssoc) \
-            .filter(TypeNamedEntityAssoc.namedentity == object_ne).first().type
-        result.append({"predicate_URI": predicate_URI,
-                       "candidate_subclass": CandidateSubclass,
-                       "subject_ne":subject_ne, "object_ne":object_ne,
-                       "subject_type":subject_type, "object_type":object_type,
-                       "samples_file_path": pca.samples_file_path})
-    return result;
+    predicate=sentimantic_session.query(Predicate).filter(Predicate.uri==predicate_URI).first()
+    if predicate != None:
+        predicate_URI=predicate_URI.strip()
+        pca_list=sentimantic_session.query(PredicateCandidateAssoc) \
+            .filter(PredicateCandidateAssoc.predicate_id == predicate.id).all()
+        for pca in pca_list:
+            candidate=sentimantic_session.query(BinaryCandidate) \
+                .filter(BinaryCandidate.id==pca.candidate_id).first()
+            subject_ne=candidate.subject_namedentity.strip()
+            object_ne=candidate.object_namedentity.strip()
+            candidate_name=(subject_ne+object_ne).encode("utf-8")
+            CandidateSubclass = candidate_subclass(candidate_name,
+                                                   ["subject_"+subject_ne.lower(),
+                                                    "object_"+object_ne.lower()
+                                                    ])
+            subject_type=sentimantic_session.query(TypeNamedEntityAssoc) \
+                .filter(TypeNamedEntityAssoc.namedentity == subject_ne).first().type
+            object_type=sentimantic_session.query(TypeNamedEntityAssoc) \
+                .filter(TypeNamedEntityAssoc.namedentity == object_ne).first().type
+            result.append({"predicate_URI": predicate_URI,
+                           "candidate_subclass": CandidateSubclass,
+                           "subject_ne":subject_ne, "object_ne":object_ne,
+                           "subject_type":subject_type, "object_type":object_type,
+                           "samples_file_path": pca.samples_file_path})
+    return result
 
 
 
-def infer_and_save_predicate_candidates_types(predicate_URI):
+def infer_and_save_predicate_candidates_types(predicate_URI, sample_files_base_path="./data/samples/"):
+    logging.info('Starting infering predicate "%s" domain, range and candidates types ', predicate_URI)
     SentimanticSession=get_sentimanctic_session()
     sentimantic_session=SentimanticSession()
     predicate_URI=predicate_URI.strip()
@@ -77,39 +64,42 @@ def infer_and_save_predicate_candidates_types(predicate_URI):
     domains=get_predicate_domains(predicate_URI)
     #retrieve predicate range
     ranges=get_predicate_ranges(predicate_URI)
-
-    for domain in domains:
-        subject_ne=domain["ne"]
-        for range in ranges:
-            object_ne=range["ne"]
-            candidate=sentimantic_session.query(BinaryCandidate) \
-                .filter(BinaryCandidate.subject_namedentity == subject_ne,
-                        BinaryCandidate.object_namedentity == object_ne
-                        ).first()
-            if candidate == None :
-                candidate = BinaryCandidate(subject_namedentity=subject_ne,
-                                            object_namedentity=object_ne)
-                sentimantic_session.add(candidate)
-                sentimantic_session.commit()
+    predicate=sentimantic_session.query(Predicate).filter(Predicate.uri==predicate_URI).first()
+    if predicate != None:
+        for domain in domains:
+            subject_ne=domain["ne"]
+            for range in ranges:
+                object_ne=range["ne"]
                 candidate=sentimantic_session.query(BinaryCandidate) \
                     .filter(BinaryCandidate.subject_namedentity == subject_ne,
                             BinaryCandidate.object_namedentity == object_ne
                             ).first()
+                if candidate == None :
+                    candidate = BinaryCandidate(subject_namedentity=subject_ne,
+                                                object_namedentity=object_ne)
+                    sentimantic_session.add(candidate)
+                    sentimantic_session.commit()
+                    candidate=sentimantic_session.query(BinaryCandidate) \
+                        .filter(BinaryCandidate.subject_namedentity == subject_ne,
+                                BinaryCandidate.object_namedentity == object_ne
+                                ).first()
 
 
-            pca=sentimantic_session.query(PredicateCandidateAssoc) \
-                .filter(PredicateCandidateAssoc.predicate_id == predicate_URI,
-                        PredicateCandidateAssoc.candidate_id == candidate.id
-                        ).first()
-            if pca == None:
-                pca = PredicateCandidateAssoc(predicate_id=predicate_URI,
-                                              candidate_id=candidate.id)
-                sentimantic_session.add(pca)
-                sentimantic_session.commit()
                 pca=sentimantic_session.query(PredicateCandidateAssoc) \
-                    .filter(PredicateCandidateAssoc.predicate_id == predicate_URI,
+                    .filter(PredicateCandidateAssoc.predicate_id == predicate.id,
                             PredicateCandidateAssoc.candidate_id == candidate.id
                             ).first()
+                if pca == None:
+                    predicate_split = predicate_URI.split('/')
+                    predicate_split_len = len(predicate_split)
+                    predicate_name = predicate_split[predicate_split_len - 1].strip()
+                    samples_file_path=sample_files_base_path+predicate_name+candidate.subject_namedentity.title()+candidate.object_namedentity.title()+".csv"
+                    pca = PredicateCandidateAssoc(predicate_id=predicate.id,
+                                                  candidate_id=candidate.id,
+                                                  samples_file_path=samples_file_path)
+                    sentimantic_session.add(pca)
+                    sentimantic_session.commit()
+    logging.info('Finished infering predicate "%s" domain, range and candidates types ', predicate_URI)
 
 def count_predicate_samples(predicate_URI, kb_SPARQL_endpoint="https://dbpedia.org/sparql",
                             defaultGraph="http://dbpedia.org"):
@@ -283,15 +273,16 @@ def get_types_filter_regex():
 
     return filter
 
-def get_predicate_samples_from_KB(predicate_URI, domain, range, kb_SPARQL_endpoint="https://dbpedia.org/sparql",
+def get_predicate_samples_from_KB(predicate_resume, kb_SPARQL_endpoint="https://dbpedia.org/sparql",
                                   defaultGraph="http://dbpedia.org"):
+
+
     sparql = SPARQLWrapper(kb_SPARQL_endpoint, defaultGraph=defaultGraph)
-    predicate_resumes=get_predicate_resume(predicate_URI)
-    predicate_resume=None
-    for predicate_resume_tmp in predicate_resumes:
-        if predicate_resume_tmp["subject_type"]==domain and predicate_resume_tmp["object_type"]==range :
-            predicate_resume=predicate_resume_tmp
-            break
+
+    predicate_URI=predicate_resume["predicate_URI"]
+    domain=predicate_resume["subject_type"]
+    range=predicate_resume["object_type"]
+    logging.info('Starting downloading samples for predicate "%s" domain "%s", range "%s"', predicate_URI, domain, range)
 
     file = open(predicate_resume["samples_file_path"], 'a+')
     import csv
@@ -345,16 +336,17 @@ def get_predicate_samples_from_KB(predicate_URI, domain, range, kb_SPARQL_endpoi
     #    copyfileobj(file, output)
     #import os
     #os.remove(file.name)
+    logging.info('Finished downloading samples for predicate "%s" domain "%s", range "%s"', predicate_URI, domain, range)
 
-def set_predicates_candidate_file_path(base_path="./data/samples/"):
-    SentimanticSession=get_sentimanctic_session()
-    session=SentimanticSession()
-    pca_list=session.query(PredicateCandidateAssoc).all()
-    for pca in pca_list:
-        candidate=session.query(BinaryCandidate).filter(BinaryCandidate.id==pca.candidate_id).first()
-        predicate_split = pca.predicate_id.split('/')
-        predicate_split_len = len(predicate_split)
-        predicate = predicate_split[predicate_split_len - 1].strip()
-        pca.samples_file_path=base_path+predicate+candidate.subject_namedentity.title()+candidate.object_namedentity.title()+".csv"
-        session.flush()
-    session.commit()
+# def set_predicates_candidate_file_path(base_path="./data/samples/"):
+#     SentimanticSession=get_sentimanctic_session()
+#     session=SentimanticSession()
+#     pca_list=session.query(PredicateCandidateAssoc).all()
+#     for pca in pca_list:
+#         candidate=session.query(BinaryCandidate).filter(BinaryCandidate.id==pca.candidate_id).first()
+#         predicate_split = pca.predicate_id.split('/')
+#         predicate_split_len = len(predicate_split)
+#         predicate = predicate_split[predicate_split_len - 1].strip()
+#         pca.samples_file_path=base_path+predicate+candidate.subject_namedentity.title()+candidate.object_namedentity.title()+".csv"
+#         session.flush()
+#     session.commit()
