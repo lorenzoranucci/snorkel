@@ -5,6 +5,9 @@ from sqlalchemy.orm import sessionmaker
 
 SentimanticBase = declarative_base(name='SentimanticBase', cls=object)
 
+def get_sentimantic_engine():
+    sentimantic_engine=create_engine('postgresql://sentimantic:sentimantic@localhost:5432/sentimantic')
+    return sentimantic_engine
 
 class Predicate(SentimanticBase):
     __tablename__ = 'predicate'
@@ -33,7 +36,7 @@ class NamedEntity(SentimanticBase):
 
 class TypeNamedEntityAssoc(SentimanticBase):
     __tablename__ = 'type_namedentity_assoc'
-    type =  Column(Integer, ForeignKey('type.uri', ondelete='CASCADE'), primary_key=True)
+    type =  Column(String, ForeignKey('type.uri', ondelete='CASCADE'), primary_key=True)
     namedentity = Column(String, ForeignKey('namedentity.name', ondelete='CASCADE'), primary_key=True)
 
 #all candidates list
@@ -54,9 +57,7 @@ class PredicateCandidateAssoc(SentimanticBase):
     samples_file_path= Column(String(2000))
     UniqueConstraint('predicate_id', 'candidate_id')
 
-def get_sentimantic_engine():
-    sentimantic_engine=create_engine('sqlite:///sentimantic.db')
-    return sentimantic_engine
+
 
 def get_sentimanctic_session():
     return sessionmaker(bind=get_sentimantic_engine())
