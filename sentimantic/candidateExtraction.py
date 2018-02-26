@@ -1,66 +1,61 @@
 import os
-
-
+import logging
 from snorkel import SnorkelSession
 from snorkel.models import candidate_subclass
 from snorkel.candidates import Ngrams, CandidateExtractor
 from snorkel.matchers import PersonMatcher, DateMatcher,  OrganizationMatcher
 from matchers import GPEMatcher, EventMatcher, WorkOfArtMatcher, LanguageMatcher
 from snorkel.models import Sentence
-import logging
 
-def extract_binary_candidates(candidates):
-    logging.info("Candidates extraction start")
+def extract_binary_candidates(predicate_resume):
+    logging.info("Starting candidates extraction ")
     parallelism=None
     if 'SNORKELDB' in os.environ and os.environ['SNORKELDB'] != '':
         parallelism=20
-    candidate_list=[]
-    for candidate in candidates:
-        subject_ne=candidate.subject_namedentity
-        object_ne=candidate.object_namedentity
+    subject_ne=predicate_resume.subject_ne
+    object_ne=predicate_resume.object_ne
 
-        session = SnorkelSession()
-        candidate_name=(subject_ne+object_ne).encode("utf-8")
+    session = SnorkelSession()
+    CandidateSubclass = predicate_resume["candidate_subclass"]
+    candidates_count = session.query(candidate_subclass).count()
+    if candidates_count>1:
+        logging.warn("Candidates already extracted, skipping...")
+        return
 
-        CandidateSubclass = candidate_subclass(candidate_name,
-                                               ["subject_"+subject_ne.lower(),
-                                                "object_"+object_ne.lower()
-                                                ])
-        ngrams= Ngrams(n_max=7)
-        subject_matcher = get_matcher(subject_ne)
-        object_matcher = get_matcher(object_ne)
-        cand_extractor = CandidateExtractor(CandidateSubclass, [ngrams, ngrams], [subject_matcher,object_matcher])
-        candidate_list.append({"extractor":cand_extractor,"subclass":CandidateSubclass})
+    ngrams= Ngrams(n_max=7)
+    subject_matcher = get_matcher(subject_ne)
+    object_matcher = get_matcher(object_ne)
+    cand_extractor = CandidateExtractor(CandidateSubclass, [ngrams, ngrams], [subject_matcher,object_matcher])
 
+    sents_count=session.query(Sentence).count()
+    page=sents_count
+    if sents_count > 20000:
+        page=10000
     clear=True
-    page=200000
-    start=1
     i=1
     while(True):
         extracted_count=0
         set_name="train"
-        split=1
-        if i % 10 == 8:
+        split=0
+        if i % 10 == 1:
             set_name="dev"
-            split=2
-        elif i % 10 == 9:
+            split=1
+        elif i % 10 == 2:
             set_name="test"
-            split=3
+            split=2
         else:
             set_name="train"
-            split=1
+            split=0
 
-        logging.debug('\tQuering sentences from %s to %s, in set \'%s\'', start, start+page, set_name)
-        sents=session.query(Sentence).order_by(Sentence.id).slice(start,start+page).all()
-        if sents == None or len(sents) < 1 : break
-        for candidate in candidate_list:
-            candidate["extractor"].apply(sents, split=split, clear=clear, progress_bar=False, parallelism=parallelism)
-            extracted_count=session.query(candidate["subclass"]).filter(candidate["subclass"].split == split).count()
-            logging.debug('\t\t%d candidates extracted for %s', extracted_count, candidate["subclass"].__name__)
-        start=start+page
-        clear=False
+        logging.debug('\tQuering sentences from %s to %s, in set \'%s\'', (page*(i-1))+1, page*i, set_name)
+        sents=session.query(Sentence).order_by(Sentence.id).slice((page*(i-1))+1, page*i).all()
+        if sents == None or len(sents) < 1 :
+            break
+        cand_extractor.apply(sents, split=split, clear=clear, progress_bar=False, parallelism=parallelism)
+        extracted_count=session.query(candidate_subclass()).filter(candidate_subclass().split == split).count()
+        logging.debug('\t\t%d candidates extracted for %s', extracted_count, candidate_subclass().__name__)
         i=i+1
-
+    logging.info("Finished candidates extraction ")
 
 
 def get_matcher(ne):
