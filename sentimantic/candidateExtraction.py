@@ -7,40 +7,43 @@ from snorkel.matchers import PersonMatcher, DateMatcher,  OrganizationMatcher
 from matchers import GPEMatcher, EventMatcher, WorkOfArtMatcher, LanguageMatcher
 from snorkel.models import Sentence
 
-def extract_binary_candidates(predicate_resume):
+def extract_binary_candidates(predicate_resume, clear=False, parallel=True):
     logging.info("Starting candidates extraction ")
     parallelism=None
-    if 'SNORKELDB' in os.environ and os.environ['SNORKELDB'] != '':
+    if parallel == True and 'SNORKELDB' in os.environ and os.environ['SNORKELDB'] != '':
         parallelism=20
-    subject_ne=predicate_resume.subject_ne
-    object_ne=predicate_resume.object_ne
+    subject_ne=predicate_resume['subject_ne']
+    object_ne=predicate_resume['object_ne']
 
     session = SnorkelSession()
     CandidateSubclass = predicate_resume["candidate_subclass"]
-    candidates_count = session.query(candidate_subclass).count()
-    if candidates_count>1:
+    candidates_count = session.query(CandidateSubclass).count()
+    if candidates_count>1 and clear==False:
         logging.warn("Candidates already extracted, skipping...")
         return
 
     ngrams= Ngrams(n_max=7)
     subject_matcher = get_matcher(subject_ne)
     object_matcher = get_matcher(object_ne)
-    cand_extractor = CandidateExtractor(CandidateSubclass, [ngrams, ngrams], [subject_matcher,object_matcher])
+    cand_extractor = CandidateExtractor(CandidateSubclass, [ngrams, ngrams], [subject_matcher,object_matcher],self_relations=True,
+                                        nested_relations=True,
+                                        symmetric_relations=True)
 
     sents_count=session.query(Sentence).count()
-    page=sents_count
-    if sents_count > 20000:
+
+    if sents_count > 100000:
         page=10000
-    clear=True
+    else:
+        page=sents_count/10 #split in 10 chunks
     i=1
     while(True):
         extracted_count=0
         set_name="train"
         split=0
-        if i % 10 == 1:
+        if i % 10 == 2:
             set_name="dev"
             split=1
-        elif i % 10 == 2:
+        elif i % 10 == 3:
             set_name="test"
             split=2
         else:
@@ -52,9 +55,10 @@ def extract_binary_candidates(predicate_resume):
         if sents == None or len(sents) < 1 :
             break
         cand_extractor.apply(sents, split=split, clear=clear, progress_bar=False, parallelism=parallelism)
-        extracted_count=session.query(candidate_subclass()).filter(candidate_subclass().split == split).count()
-        logging.debug('\t\t%d candidates extracted for %s', extracted_count, candidate_subclass().__name__)
+        extracted_count=session.query(CandidateSubclass).filter(CandidateSubclass.split == split).count()
+        logging.debug('\t\t%d candidates extracted for %s', extracted_count, CandidateSubclass.__name__)
         i=i+1
+        clear=False
     logging.info("Finished candidates extraction ")
 
 
