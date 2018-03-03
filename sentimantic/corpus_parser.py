@@ -9,16 +9,22 @@ from snorkel.models import Document, Sentence
 import logging
 
 def parse_wikipedia_dump(
-    dumps_folder_path='../../data/wikipedia/dump/en_1/extracted_text/split/'):
+    dumps_folder_path='../../data/wikipedia/dump/en_1/extracted_text/split/', clear=False):
 
     logging.info("Corpus parsing start")
     session = SnorkelSession()
+    if clear== False:
+        doc_count = session.query(Document).count()
+        if doc_count > 1:
+            logging.warn("Documents already parsed, skipping...")
+            return
+
+
 
     corpus_parser = CorpusParser(parser=Spacy())
     onlyfiles = [f for f in listdir(dumps_folder_path) if isfile(join(dumps_folder_path, f))]
 
     i=0
-    clear=True
     for file in onlyfiles:
         print file
         doc_preprocessor = XMLMultiDocPreprocessor(
