@@ -24,6 +24,7 @@ def save_predicate(predicate_URI):
 
 
 def get_predicate_resume(predicate_URI):
+
     result=[]
     SentimanticSession = get_sentimanctic_session()
     sentimantic_session = SentimanticSession()
@@ -46,11 +47,16 @@ def get_predicate_resume(predicate_URI):
                 .filter(TypeNamedEntityAssoc.namedentity == subject_ne).first().type
             object_type=sentimantic_session.query(TypeNamedEntityAssoc) \
                 .filter(TypeNamedEntityAssoc.namedentity == object_ne).first().type
-            result.append({"predicate_URI": predicate_URI,
-                           "candidate_subclass": CandidateSubclass,
-                           "subject_ne":subject_ne, "object_ne":object_ne,
-                           "subject_type":subject_type, "object_type":object_type,
-                           "samples_file_path": pca.samples_file_path})
+
+            predicate_split = predicate_URI.split('/')
+            predicate_split_len = len(predicate_split)
+            predicate_name = predicate_split[predicate_split_len - 1].strip()
+            result.append({"predicate_name": predicate_name,
+                            "predicate_URI": predicate_URI,
+                            "candidate_subclass": CandidateSubclass,
+                            "subject_ne":subject_ne, "object_ne":object_ne,
+                            "subject_type":subject_type, "object_type":object_type,
+                            "samples_file_path": pca.samples_file_path})
     return result
 
 
