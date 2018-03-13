@@ -13,11 +13,6 @@ def parse_wikipedia_dump(
 
     logging.info("Corpus parsing start")
     session = SnorkelSession()
-    if clear== False:
-        doc_count = session.query(Document).count()
-        if doc_count > 1:
-            logging.warn("Documents already parsed, skipping...")
-            return
 
 
 
@@ -26,25 +21,26 @@ def parse_wikipedia_dump(
 
     i=0
     for file in onlyfiles:
-        print file
-        doc_preprocessor = XMLMultiDocPreprocessor(
-            path=dumps_folder_path+file,
-            doc='.//document',
-            text='.//text/text()',
-            id='.//id/text()'
-        )
-        if i > 0:
-            clear = False
-        parallelism=None
-        if 'SNORKELDB' in os.environ and os.environ['SNORKELDB'] != '':
-            parallelism=25
-        try:
-            corpus_parser.apply(doc_preprocessor, clear=clear, parallelism=parallelism)
-        except Exception as e :
-            logging.warning("Corpus parsing error: %s", e)
+        if  file.endswith(".xml"):
+            print file
+            doc_preprocessor = XMLMultiDocPreprocessor(
+                path=dumps_folder_path+file,
+                doc='.//document',
+                text='.//text/text()',
+                id='.//id/text()'
+            )
+            if i > 0:
+                clear = False
+            parallelism=None
+            if 'SNORKELDB' in os.environ and os.environ['SNORKELDB'] != '':
+                parallelism=7
+            try:
+                corpus_parser.apply(doc_preprocessor, clear=clear, parallelism=parallelism)
+            except Exception as e :
+                logging.warning("Corpus parsing error: %s", e)
 
 
-        logging.debug("Documents: %d", session.query(Document).count())
-        logging.debug("Sentences: %d", session.query(Sentence).count())
-        i=i+1
+            i=i+1
+    logging.debug("Documents: %d", session.query(Document).count())
+    logging.debug("Sentences: %d", session.query(Sentence).count())
     logging.info("Corpus parsing end")

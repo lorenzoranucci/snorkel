@@ -19,3 +19,7 @@ tika
 spacy==1.10.0
 psycopg2
 py4j
+
+sparqlwrapper
+wikipedia
+textacy

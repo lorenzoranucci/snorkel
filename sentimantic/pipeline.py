@@ -9,10 +9,11 @@ from predicate_utils import save_predicate, infer_and_save_predicate_candidates_
 from candidateExtraction import extract_binary_candidates
 from labelingFunctionsFactory import predicate_candidate_distant_supervision
 from train_model import train_model
+from test_model import test_model, before_test
 
 logging.basicConfig(filename='sentimantic.log',level=logging.DEBUG, format='%(asctime)s %(message)s')
-dump_file_dir="../../data/wikipedia/api/en/"
-dump_file_name="first_extraction.xml"
+dump_file_dir="../../data/wikipedia/dump/en_1/split/"
+dump_file_name="complete.xml"
 
 
 def before_start_pipeline(dump_file_path):
@@ -21,21 +22,30 @@ def before_start_pipeline(dump_file_path):
     titles_list=[
         "Obama",
         "DiCaprio",
-        #"Del Piero",
-        #"Ronaldo Cristiano",
+        "Del Piero",
+        "Ronaldo Cristiano",
         "Elon Musk",
         "Shakira",
-        #"Francesco Totti",
-        #"Gianluigi Buffon",
-        # "Kurt Cobain",
-        # "Jimmy Page",
-        # "Robert Plant"
+        "Francesco Totti",
+        "Gianluigi Buffon",
+        "Kurt Cobain",
+        "Jimmy Page",
+        "Robert Plant",
+        "Enzo Ferrari",
+        "Rita Levi Montalicini",
+        "Linus Torvald",
+        "Dennis Ritchie",
+        "Zinedine Zidane",
+        "Robero Baggio",
+        "Tim Berners-Lee",
+        "Grace Hopper",
+        "Alan Turing"
     ]
     download_articles(titles_list, dump_file_path)
 
 def start_pipeline(dump_file_dir):
     logging.info("Pipeline start")
-    parse_wikipedia_dump(dump_file_dir, clear=clear)
+    #parse_wikipedia_dump(dump_file_dir, clear=clear)
     predicate_URI_list=["http://dbpedia.org/ontology/birthPlace"]
     for predicate_URI in predicate_URI_list:
         start_predicate_pipeline(predicate_URI)
@@ -54,16 +64,18 @@ def start_predicate_domain_range_pipeline(predicate_resume):
     #download samples from knowledge base
     #get_predicate_samples_from_KB(predicate_resume)
     #candidates extraction
-    extract_binary_candidates(predicate_resume, clear=clear)
+    #extract_binary_candidates(predicate_resume, clear=clear)
 
     #create_gold_label(predicate_resume)
     #candidates labeling with distant supervision
-    predicate_candidate_distant_supervision(predicate_resume, parallel=True, clear=clear)
+    predicate_candidate_distant_supervision(predicate_resume, parallel=True, clear=clear, words={"born"}, test=False, limit=1000000)
     #todo labeling with predicate specific or domain specific functions
     #train model
     train_model(predicate_resume)
+    test_model(predicate_resume)
+    #before_test(predicate_resume,"../../data/wikipedia/api/en1/")
 
 
 clear=True
-before_start_pipeline(dump_file_dir+dump_file_name)
+#before_start_pipeline(dump_file_dir+dump_file_name)
 start_pipeline(dump_file_dir)

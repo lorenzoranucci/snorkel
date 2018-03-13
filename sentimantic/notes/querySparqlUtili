@@ -1,4 +1,13 @@
-
+create view persongpe_text_marginal as
+select
+marginal.training,
+marginal.value,
+marginal.probability,
+sentence."text"
+from marginal
+inner join persongpe on marginal.candidate_id=persongpe.id
+inner join span on persongpe.subject_person_id=span.id
+inner join sentence on span.sentence_id=sentence.id
 
 #TIPI DISTINTI DI SOGGETTO E OGGETTO PER UN PREDICATO
 select distinct ?typeS ?typeO
@@ -29,6 +38,43 @@ WHERE{
 }
 ORDER BY DESC(?typeCoupleCount)
 
+#DOMINIO DI UN PREDICATO
+SELECT ?typeS COUNT  (?typeS )AS ?typeSCount
+WHERE{
+    ?s <http://dbpedia.org/ontology/city> ?o.
+    ?s a ?typeS.
+    FILTER( regex(?typeS, "http://dbpedia.org/ontology/Person", "i") ||
+    regex(?typeS, "http://dbpedia.org/ontology/Place", "i") ||
+    regex(?typeS, "http://dbpedia.org/ontology/Event", "i") ||
+    regex(?typeS, "http://dbpedia.org/ontology/Organisation", "i")
+    )
+}
+GROUP BY (?typeS)
+ORDER BY DESC(?typeSCount)
+
+#RANGE DI UN PREDICATO
+SELECT ?typeO COUNT  (?typeO )AS ?typeOCount
+WHERE{
+    ?s <http://dbpedia.org/ontology/city> ?o.
+    ?o a ?typeO.
+    FILTER( regex(?typeO, "http://dbpedia.org/ontology/Person", "i") ||
+    regex(?typeO, "http://dbpedia.org/ontology/Place", "i") ||
+    regex(?typeO, "http://dbpedia.org/ontology/Event", "i") ||
+    regex(?typeO, "http://dbpedia.org/ontology/Organisation", "i")
+    )
+}
+GROUP BY (?typeO)
+ORDER BY DESC(?typeOCount)
+
+#OCCORRENZE DELLA COPPIA SOGGETTO OGGETTO PER TIPO
+SELECT COUNT DISTINCT ?s ?o
+WHERE{
+    ?s <http://dbpedia.org/ontology/city> ?o.
+    ?s a <http://dbpedia.org/ontology/Organisation> .
+    ?o a <http://dbpedia.org/ontology/Place>.
+
+}
+
 
 #LABEL DEL SOGGETTO IN CHUNK
 select  ?subjectLabel ?o
@@ -52,3 +98,23 @@ FILTER (lang(?objectLabel) = 'en' )
 }
 OFFSET 0
 LIMIT 1000
+
+#DOMAIN
+SELECT ?domain
+WHERE {
+ <http://dbpedia.org/ontology/birthDate> <http://www.w3.org/2000/01/rdf-schema#domain> ?domain.
+}
+
+#RANGE
+SELECT ?range
+WHERE {
+ <http://dbpedia.org/ontology/birthDate> <http://www.w3.org/2000/01/rdf-schema#range> ?range.
+}
+
+date,location,number,organization,person,
+
+#SUPERTYPES
+select ?superClass
+where{<http://dbpedia.org/ontology/City> <http://www.w3.org/2000/01/rdf-schema#subClassOf> ?superClass.}
+
+
