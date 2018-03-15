@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 SentimanticBase = declarative_base(name='SentimanticBase', cls=object)
 
 def get_sentimantic_engine():
-    sentimantic_engine=create_engine('postgresql://sentimantic:sentimantic@localhost:5432/sentimantic')
+    sentimantic_engine=create_engine('postgresql://sentimantic:sentimantic@postgres:5432/sentimantic')
     return sentimantic_engine
 
 class Predicate(SentimanticBase):

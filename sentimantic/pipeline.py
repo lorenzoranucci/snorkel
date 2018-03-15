@@ -1,5 +1,5 @@
 import os
-os.environ['SNORKELDB'] = 'postgresql://sentimantic:sentimantic@localhost:5432/snorkel'
+os.environ['SNORKELDB'] = 'postgresql://sentimantic:sentimantic@postgres:5432/snorkel'
 import logging
 from models import create_database
 from wikipedia_client import download_articles
@@ -68,7 +68,7 @@ def start_predicate_domain_range_pipeline(predicate_resume):
 
     #create_gold_label(predicate_resume)
     #candidates labeling with distant supervision
-    predicate_candidate_distant_supervision(predicate_resume, parallel=True, clear=clear, words={"born"}, test=False, limit=1000000)
+    #predicate_candidate_distant_supervision(predicate_resume, parallel=True, clear=clear, words={"born"}, test=False, limit=100000)
     #todo labeling with predicate specific or domain specific functions
     #train model
     train_model(predicate_resume)
