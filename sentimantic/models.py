@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
+import traceback
 
 SentimanticBase = declarative_base(name='SentimanticBase', cls=object)
 
@@ -67,7 +68,9 @@ def create_database():
     engine=get_sentimantic_engine()
     try:
         SentimanticBase.metadata.create_all(engine)
-        statement = text("""INSERT INTO type (uri) VALUES ('http://www.w3.org/2001/XMLSchema#date');
+        statement = text("""
+    INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Person');
+    INSERT INTO type (uri) VALUES ('http://www.w3.org/2001/XMLSchema#date');
     INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Place');
     INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Organisation');
     INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Event');
@@ -88,8 +91,7 @@ def create_database():
     INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Event', 'EVENT');
     INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Work', 'WORK_OF_ART');
     INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Language', 'LANGUAGE');
-    INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Award', 'ORG');
-    """)
+    INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Award', 'ORG');""")
         engine.execute(statement)
     except Exception:
         print("Skip database creation")
