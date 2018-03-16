@@ -9,7 +9,7 @@ from snorkel.models import Document, Sentence
 import logging
 
 def parse_wikipedia_dump(
-    dumps_folder_path='../../data/wikipedia/dump/en_1/extracted_text/split/', clear=False):
+    dumps_folder_path='../../data/wikipedia/dump/en/extracted_text/AA/', clear=False, parallelism=1):
 
     logging.info("Corpus parsing start")
     session = SnorkelSession()
@@ -25,21 +25,13 @@ def parse_wikipedia_dump(
             print file
             doc_preprocessor = XMLMultiDocPreprocessor(
                 path=dumps_folder_path+file,
-                doc='.//document',
-                text='.//text/text()',
-                id='.//id/text()'
+                doc='.//doc',
+                text='./text()',
+                id='./@title'
             )
             if i > 0:
                 clear = False
-            parallelism=None
-            if 'SNORKELDB' in os.environ and os.environ['SNORKELDB'] != '':
-                parallelism=7
-            try:
-                corpus_parser.apply(doc_preprocessor, clear=clear, parallelism=parallelism)
-            except Exception as e :
-                logging.warning("Corpus parsing error: %s", e)
-
-
+            corpus_parser.apply(doc_preprocessor, clear=clear, parallelism=parallelism)
             i=i+1
     logging.debug("Documents: %d", session.query(Document).count())
     logging.debug("Sentences: %d", session.query(Sentence).count())

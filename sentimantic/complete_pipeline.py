@@ -3,7 +3,6 @@ import os
 os.environ['SNORKELDB'] = 'postgresql://sentimantic:sentimantic@postgres:5432/sentimantic'
 import logging
 from models import create_database
-from wikipedia_client import download_articles
 from corpus_parser import parse_wikipedia_dump
 from gold_label_creator import create_gold_label
 from predicate_utils import save_predicate, infer_and_save_predicate_candidates_types, get_predicate_resume, get_predicate_samples_from_KB
@@ -13,33 +12,16 @@ from train_model import train_model
 from test_model import test_model, before_test
 
 logging.basicConfig(filename='sentimantic.log',level=logging.DEBUG, format='%(asctime)s %(message)s')
-dump_file_dir="../../data/wikipedia/dump/en/"
-dump_file_name="complete.xml"
+dump_file_dir="../../data/wikipedia/dump/en/extracted_text/AA/"
+dump_file_name="wiki_00.xml"
 
 
-def before_start_pipeline(dump_file_path):
+
+
+def start_pipeline(dump_file_dir,parallelism=1, clear=False):
     create_database()
-    #download some page contents from wikipedia
-    titles_list=[
-        "Obama",
-        "DiCaprio",
-        "Del Piero",
-        "Ronaldo Cristiano",
-        "Elon Musk",
-        "Shakira",
-        "Francesco Totti",
-        "Gianluigi Buffon",
-        "Kurt Cobain",
-        "Jimmy Page",
-        "Robert Plant",
-        "Enzo Ferrari",
-        "Zinedine Zidane"
-    ]
-    download_articles(titles_list, dump_file_path)
-
-def start_pipeline(dump_file_dir):
     logging.info("Pipeline start")
-    parse_wikipedia_dump(dump_file_dir, clear=clear)
+    parse_wikipedia_dump(dump_file_dir, parallelism=parallelism, clear=clear)
     predicate_URI_list=["http://dbpedia.org/ontology/birthPlace"]
     for predicate_URI in predicate_URI_list:
         start_predicate_pipeline(predicate_URI)
@@ -71,5 +53,5 @@ def start_predicate_domain_range_pipeline(predicate_resume):
 
 
 clear=True
-before_start_pipeline(dump_file_dir+dump_file_name)
-start_pipeline(dump_file_dir)
+parallelism=8
+start_pipeline(dump_file_dir,parallelism,clear)
