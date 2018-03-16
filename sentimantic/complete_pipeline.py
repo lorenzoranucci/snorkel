@@ -1,3 +1,4 @@
+from PyQt5 import QtCore, QtGui, QtWidgets
 import os
 os.environ['SNORKELDB'] = 'postgresql://sentimantic:sentimantic@postgres:5432/sentimantic'
 import logging
