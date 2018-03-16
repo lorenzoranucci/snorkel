@@ -1,5 +1,5 @@
 import os
-os.environ['SNORKELDB'] = 'postgresql://sentimantic:sentimantic@postgres:5432/snorkel'
+os.environ['SNORKELDB'] = 'postgresql://sentimantic:sentimantic@postgres:5432/sentimantic'
 import logging
 from models import create_database
 from wikipedia_client import download_articles
@@ -17,7 +17,7 @@ dump_file_name="complete.xml"
 
 
 def before_start_pipeline(dump_file_path):
-    #create_database()
+    create_database()
     #download some page contents from wikipedia
     titles_list=[
         "Obama",
@@ -32,14 +32,7 @@ def before_start_pipeline(dump_file_path):
         "Jimmy Page",
         "Robert Plant",
         "Enzo Ferrari",
-        "Rita Levi Montalicini",
-        "Linus Torvald",
-        "Dennis Ritchie",
-        "Zinedine Zidane",
-        "Robero Baggio",
-        "Tim Berners-Lee",
-        "Grace Hopper",
-        "Alan Turing"
+        "Zinedine Zidane"
     ]
     download_articles(titles_list, dump_file_path)
 
@@ -71,7 +64,7 @@ def start_predicate_domain_range_pipeline(predicate_resume):
     #predicate_candidate_distant_supervision(predicate_resume, parallel=True, clear=clear, words={"born"}, test=False, limit=100000)
     #todo labeling with predicate specific or domain specific functions
     #train model
-    train_model(predicate_resume)
+    #train_model(predicate_resume)
     test_model(predicate_resume)
     #before_test(predicate_resume,"../../data/wikipedia/api/en1/")
 

@@ -14,6 +14,7 @@ def test_model(predicate_resume):
     candidate_subclass=predicate_resume["candidate_subclass"]
     test_cands  = session.query(candidate_subclass).\
         filter(or_(candidate_subclass.id==7581,
+                   candidate_subclass.id==103456,
                    candidate_subclass.id==9697,
                    candidate_subclass.id==9699,
                    candidate_subclass.id==6810,
