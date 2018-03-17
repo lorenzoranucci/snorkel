@@ -47,7 +47,7 @@ for arg in sys.argv:
 
 
 
-def start_pipeline(dump_file_dir,parallelism=1):
+def start_pipeline():
     create_database()
     logging.info("Pipeline start")
     if is_to_parse_wikipedia_dump:
@@ -86,4 +86,4 @@ def start_predicate_domain_range_pipeline(predicate_resume):
 
 
 
-start_pipeline(dump_file_dir,parallelism,clear)
+start_pipeline()
