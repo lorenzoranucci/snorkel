@@ -25,13 +25,6 @@ from snorkel.models import Label, Candidate
 def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8, clear=False, test=False, limit=None):
     logging.info("Starting labeling with distant supervision ")
     session = SnorkelSession()
-    #run dbpedia lookup for distant supervision
-    # proc = subprocess.Popen("./run_lookup.sh", shell=True,
-    #                         stdin=None, stdout=None, stderr=None, close_fds=True)
-    # return_code=proc.poll()
-    # while return_code == None:
-    #     #print("DBpedia Lookup lanching...")
-    #     return_code=proc.poll()
     try:
 
         samples_file_path=predicate_resume["samples_file_path"]
@@ -178,11 +171,6 @@ def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8, cle
 
     finally:
         logging.info("Finished labeling with distant supervision ")
-        # proc = subprocess.Popen("./stop_lookup.sh", shell=True,
-        #                         stdin=None, stdout=None, stderr=None, close_fds=True)
-        # return_code=proc.poll()
-        # while return_code == None:
-        #     return_code=proc.poll()
 
 
 
