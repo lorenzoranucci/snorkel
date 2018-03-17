@@ -41,22 +41,23 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8, sent
         set_name=""
         if split == None:
             set_name="train"
-            split=0
             if i % 10 == 2:
                 set_name="dev"
-                split=1
+                split2=1
             elif i % 10 == 3:
                 set_name="test"
-                split=2
+                split2=2
             else:
                 set_name="train"
-                split=0
+                split2=0
+        else:
+            split2=split
 
         logging.debug('\tQuering sentences from %s to %s, in set \'%s\'', (page*(i-1))+1, page*i, set_name)
         sents=sents_query.order_by(Sentence.id).slice((page*(i-1))+1, page*i).all()
         if sents == None or len(sents) < 1 :
             break
-        cand_extractor.apply(sents, split=split, clear=clear, progress_bar=False, parallelism=parallelism)
+        cand_extractor.apply(sents, split=split2, clear=clear, progress_bar=False, parallelism=parallelism)
         extracted_count=session.query(CandidateSubclass).filter(CandidateSubclass.split == split).count()
         logging.debug('\t\t%d candidates extracted for %s', extracted_count, CandidateSubclass.__name__)
         i=i+1
