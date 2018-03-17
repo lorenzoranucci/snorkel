@@ -9,7 +9,7 @@ from snorkel.models import Document, Sentence
 import logging
 
 def parse_wikipedia_dump(
-    dumps_folder_path='../../data/wikipedia/dump/en/extracted_text/AA/', clear=False, parallelism=1):
+    dumps_folder_path='../../data/wikipedia/dump/en/extracted_text/AA/', clear=False, parallelism=8):
 
     logging.info("Corpus parsing start")
     session = SnorkelSession()

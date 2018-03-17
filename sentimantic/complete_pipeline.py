@@ -7,7 +7,7 @@ from models import create_database
 from corpus_parser import parse_wikipedia_dump
 from predicate_utils import save_predicate, infer_and_save_predicate_candidates_types, get_predicate_resume, get_predicate_samples_from_KB
 from candidateExtraction import extract_binary_candidates
-from labelingFunctionsFactory import predicate_candidate_distant_supervision
+from labelling import predicate_candidate_labelling
 from train_model import train_model
 from test_model import test_model
 
@@ -73,13 +73,13 @@ def start_predicate_domain_range_pipeline(predicate_resume):
         get_predicate_samples_from_KB(predicate_resume)
     #candidates extraction
     if is_to_extract_candidates:
-        extract_binary_candidates(predicate_resume, clear=clear)
+        extract_binary_candidates(predicate_resume, parallelism=parallelism, clear=clear)
     #candidates labeling with distant supervision
     if is_to_label:
-        predicate_candidate_distant_supervision(predicate_resume, parallel=True, clear=clear, words={"born"}, test=False, limit=100000)
+        predicate_candidate_labelling(predicate_resume, parallelism=parallelism, clear=clear, words={"born"}, test=False)
     #train model
     if is_to_train_classifier:
-        train_model(predicate_resume)
+        train_model(predicate_resume, parallelism=parallelism)
     if is_to_test_classifier:
         test_model(predicate_resume)
 

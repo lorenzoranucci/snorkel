@@ -22,14 +22,9 @@ from snorkel.lf_helpers import (
 from snorkel.models import Label, Candidate
 
 
-def predicate_candidate_distant_supervision(predicate_resume, words={}, parallel=True, clear=False, test=False, limit=None):
+def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8, clear=False, test=False, limit=None):
     logging.info("Starting labeling with distant supervision ")
     session = SnorkelSession()
-    # if clear == False:
-    #     lab_count = session.query(Label).count()
-    #     if lab_count > 1:
-    #         logging.warn("Labelling already done, skipping...")
-    #         return
     #run dbpedia lookup for distant supervision
     proc = subprocess.Popen("./run_lookup.sh", shell=True,
                             stdin=None, stdout=None, stderr=None, close_fds=True)
@@ -150,14 +145,11 @@ def predicate_candidate_distant_supervision(predicate_resume, words={}, parallel
 
             labeler = LabelAnnotator(lfs=LFs)
             np.random.seed(1701)
-            parallelism=None
-            if parallel == True and 'SNORKELDB' in os.environ and os.environ['SNORKELDB'] != '' :
-                parallelism=8
 
             if test:
                 L_train = labeler.load_matrix(session,  cids_query=cids_query)
             else:
-                L_train = labeler.apply(parallelism=parallelism, cids_query=cids_query)
+                L_train = labeler.apply(parallelism=parallelism, cids_query=cids_query, clear=clear)
 
             L_train
             gen_model = GenerativeModel()

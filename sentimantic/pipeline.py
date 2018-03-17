@@ -7,7 +7,7 @@ from corpus_parser import parse_wikipedia_dump
 from gold_label_creator import create_gold_label
 from predicate_utils import save_predicate, infer_and_save_predicate_candidates_types, get_predicate_resume, get_predicate_samples_from_KB
 from candidateExtraction import extract_binary_candidates
-from labelingFunctionsFactory import predicate_candidate_distant_supervision
+from labelling import predicate_candidate_labelling
 from train_model import train_model
 from test_model import test_model, before_test
 

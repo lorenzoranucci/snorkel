@@ -7,12 +7,9 @@ from snorkel.matchers import PersonMatcher, DateMatcher,  OrganizationMatcher
 from matchers import GPEMatcher, EventMatcher, WorkOfArtMatcher, LanguageMatcher
 from snorkel.models import Sentence
 
-def extract_binary_candidates(predicate_resume, clear=False, parallel=True, sents_query=None, split=None):
+def extract_binary_candidates(predicate_resume, clear=False, parallelism=8, sents_query=None, split=None):
     #create span and candidates
     logging.info("Starting candidates extraction ")
-    parallelism=None
-    if parallel == True and 'SNORKELDB' in os.environ and os.environ['SNORKELDB'] != '':
-        parallelism=8
     subject_ne=predicate_resume['subject_ne']
     object_ne=predicate_resume['object_ne']
 
@@ -35,8 +32,8 @@ def extract_binary_candidates(predicate_resume, clear=False, parallel=True, sent
 
     sents_count=sents_query.count()
 
-    if sents_count > 100000:
-        page=10000
+    if sents_count > 1000000:
+        page=100000
     else:
         page=sents_count/10 #split in 10 chunks
     i=1
