@@ -26,12 +26,12 @@ def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8, cle
     logging.info("Starting labeling with distant supervision ")
     session = SnorkelSession()
     #run dbpedia lookup for distant supervision
-    proc = subprocess.Popen("./run_lookup.sh", shell=True,
-                            stdin=None, stdout=None, stderr=None, close_fds=True)
-    return_code=proc.poll()
-    while return_code == None:
-        #print("DBpedia Lookup lanching...")
-        return_code=proc.poll()
+    # proc = subprocess.Popen("./run_lookup.sh", shell=True,
+    #                         stdin=None, stdout=None, stderr=None, close_fds=True)
+    # return_code=proc.poll()
+    # while return_code == None:
+    #     #print("DBpedia Lookup lanching...")
+    #     return_code=proc.poll()
     try:
 
         samples_file_path=predicate_resume["samples_file_path"]
@@ -175,13 +175,14 @@ def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8, cle
             # print(L_dev.lf_stats(session))
 
 
-            logging.info("Finished labeling with distant supervision ")
+
     finally:
-        proc = subprocess.Popen("./stop_lookup.sh", shell=True,
-                                stdin=None, stdout=None, stderr=None, close_fds=True)
-        return_code=proc.poll()
-        while return_code == None:
-            return_code=proc.poll()
+        logging.info("Finished labeling with distant supervision ")
+        # proc = subprocess.Popen("./stop_lookup.sh", shell=True,
+        #                         stdin=None, stdout=None, stderr=None, close_fds=True)
+        # return_code=proc.poll()
+        # while return_code == None:
+        #     return_code=proc.poll()
 
 
 
@@ -219,7 +220,7 @@ def get_dbpedia_noun(ngrams, type):
         response_ok=False
         while response_ok==False:
             try:
-                response_subject=requests.get("http://localhost:1111/api/search/PrefixSearch",{"MaxHits":4,"QueryClass":type,"QueryString":noun})
+                response_subject=requests.get("http://lookup:1111/api/search/PrefixSearch",{"MaxHits":4,"QueryClass":type,"QueryString":noun})
                 response_ok=response_subject.ok
             except Exception:
                 print("")
