@@ -1,7 +1,7 @@
 import logging
 from xml.dom import minidom
 
-from models import get_sentimanctic_session
+from models import get_sentimantic_session
 from snorkel import SnorkelSession
 import requests
 from snorkel.annotations import LabelAnnotator
@@ -125,7 +125,7 @@ def get_labelling_functions(predicate_resume,words={}):
     object_type_split = object_type.split('/')
     subject_type_end=subject_type_split[len(subject_type_split)-1]
     object_type_end=object_type_split[len(object_type_split)-1]
-    SentimanticSession = get_sentimanctic_session()
+    SentimanticSession = get_sentimantic_session()
     sentimantic_session = SentimanticSession()
     sample_class=predicate_resume["sample_class"]
     samples=sentimantic_session.query(sample_class).all()

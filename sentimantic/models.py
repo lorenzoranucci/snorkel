@@ -71,7 +71,7 @@ class Sample(SentimanticBase):
 
 
 
-def get_sentimanctic_session():
+def get_sentimantic_session():
     return sessionmaker(bind=get_sentimantic_engine())
 
 def create_database():
@@ -79,32 +79,35 @@ def create_database():
     try:
         SentimanticBase.metadata.create_all(engine)
         statement = text("""
-    INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Person');
-    INSERT INTO type (uri) VALUES ('http://www.w3.org/2001/XMLSchema#date');
-    INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Place');
-    INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Organisation');
-    INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Event');
-    INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Work');
-    INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Language');
-    INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Award');
-    INSERT INTO namedentity (name) VALUES ('PERSON');
-    INSERT INTO namedentity (name) VALUES ('DATE');
-    INSERT INTO namedentity (name) VALUES ('GPE');
-    INSERT INTO namedentity (name) VALUES ('ORG');
-    INSERT INTO namedentity (name) VALUES ('EVENT');
-    INSERT INTO namedentity (name) VALUES ('WORK_OF_ART');
-    INSERT INTO namedentity (name) VALUES ('LANGUAGE');
-    INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Person', 'PERSON');
-    INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://www.w3.org/2001/XMLSchema#date', 'DATE');
-    INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Place', 'GPE');
-    INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Organisation', 'ORG');
-    INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Event', 'EVENT');
-    INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Work', 'WORK_OF_ART');
-    INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Language', 'LANGUAGE');
-    INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Award', 'ORG');""")
+            INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Person');
+            INSERT INTO type (uri) VALUES ('http://www.w3.org/2001/XMLSchema#date');
+            INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Place');
+            INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Organisation');
+            INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Event');
+            INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Work');
+            INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Language');
+            INSERT INTO type (uri) VALUES ('http://dbpedia.org/ontology/Award');
+            INSERT INTO namedentity (name) VALUES ('PERSON');
+            INSERT INTO namedentity (name) VALUES ('DATE');
+            INSERT INTO namedentity (name) VALUES ('GPE');
+            INSERT INTO namedentity (name) VALUES ('ORG');
+            INSERT INTO namedentity (name) VALUES ('EVENT');
+            INSERT INTO namedentity (name) VALUES ('WORK_OF_ART');
+            INSERT INTO namedentity (name) VALUES ('LANGUAGE');
+            INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Person', 'PERSON');
+            INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://www.w3.org/2001/XMLSchema#date', 'DATE');
+            INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Place', 'GPE');
+            INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Organisation', 'ORG');
+            INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Event', 'EVENT');
+            INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Work', 'WORK_OF_ART');
+            INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Language', 'LANGUAGE');
+            INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Award', 'ORG');
+        """)
         engine.execute(statement)
+
     except Exception:
         print("Skip database creation")
+
 
 def get_predicate_candidate_samples_table(class_name):
 

@@ -29,7 +29,7 @@
     CARDINAL	Numerals that do not fall under another type.
 
     '''
-from models import  get_sentimanctic_session, TypeNamedEntityAssoc
+from models import  get_sentimantic_session, TypeNamedEntityAssoc
 
 
 def get_namedentity(type_URI, kb_sparql_endpoint="https://dbpedia.org/sparql", defaultGraph="http://dbpedia.org"):
@@ -42,7 +42,7 @@ def get_namedentity(type_URI, kb_sparql_endpoint="https://dbpedia.org/sparql", d
 
 
 def get_named_entity_type_base(type_URI):
-    SentimanticSession = get_sentimanctic_session()
+    SentimanticSession = get_sentimantic_session()
     sentimantic_session = SentimanticSession()
     type_ne = sentimantic_session.query(TypeNamedEntityAssoc).filter(TypeNamedEntityAssoc.type == type_URI).first()
     if type_ne != None:
