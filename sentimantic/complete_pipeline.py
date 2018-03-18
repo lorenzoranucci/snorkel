@@ -80,7 +80,7 @@ def start_predicate_domain_range_pipeline(predicate_resume):
         extract_binary_candidates(predicate_resume, parallelism=parallelism, clear=clear)
     #candidates labeling with distant supervision
     if is_to_label:
-        predicate_candidate_labelling(predicate_resume, parallelism=parallelism, clear=clear, words={"born"}, test=False)
+        predicate_candidate_labelling(predicate_resume, parallelism=parallelism,  words={"born"}, test=False)
     #train model
     if is_to_train_classifier:
         train_model(predicate_resume, parallelism=parallelism)
