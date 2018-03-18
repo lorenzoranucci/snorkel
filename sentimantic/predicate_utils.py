@@ -2,16 +2,16 @@ import logging
 from SPARQLWrapper import SPARQLWrapper, JSON
 
 from type_utils import get_namedentity
-from models import get_sentimanctic_session, Type, TypeNamedEntityAssoc
+from models import  Type, TypeNamedEntityAssoc
 from sqlalchemy.exc import IntegrityError
-from models import get_sentimanctic_session, Predicate, BinaryCandidate, PredicateCandidateAssoc, get_predicate_candidate_samples_table
+from models import get_sentimantic_engine,get_sentimantic_session, Predicate, BinaryCandidate, PredicateCandidateAssoc, get_predicate_candidate_samples_table
 from snorkel.models import candidate_subclass
-
+from sqlalchemy.sql import text
 
 
 def save_predicate(predicate_URI):
     logging.info('Saving predicate "%s"', predicate_URI)
-    SentimanticSession=get_sentimanctic_session()
+    SentimanticSession=get_sentimantic_session()
     sentimantic_session=SentimanticSession()
     predicate_URI=predicate_URI.strip()
     try:
@@ -27,7 +27,7 @@ def save_predicate(predicate_URI):
 def get_predicate_resume(predicate_URI):
 
     result=[]
-    SentimanticSession = get_sentimanctic_session()
+    SentimanticSession = get_sentimantic_session()
     sentimantic_session = SentimanticSession()
     predicate=sentimantic_session.query(Predicate).filter(Predicate.uri==predicate_URI).first()
     if predicate != None:
@@ -44,6 +44,32 @@ def get_predicate_resume(predicate_URI):
                                                    ["subject_"+subject_ne.lower(),
                                                     "object_"+object_ne.lower()
                                                     ])
+            try:
+                statement = text("""
+        CREATE OR REPLACE VIEW """+ candidate_name.lower() +"""_view AS
+            SELECT document.id AS docid,
+        document.name AS docname,
+        """+ candidate_name.lower() +""".id AS candid,
+        candidate.split,
+        sentence.text,
+        predicate.uri as predicate_URI,
+        label.value AS label_value,
+        marginal.probability
+       FROM """+ candidate_name.lower() +"""
+         JOIN candidate ON candidate.id = """+ candidate_name.lower() +""".id
+         JOIN span ON """+ candidate_name.lower() +""".subject_person_id = span.id
+         JOIN sentence ON span.sentence_id = sentence.id
+         JOIN document ON sentence.document_id = document.id
+         LEFT JOIN label ON candidate.id = label.candidate_id
+         LEFT JOIN label_key ON label.key_id = label_key.id
+         LEFT JOIN predicate_candidate_assoc ON label_key."group" = predicate_candidate_assoc.id
+         left join predicate on predicate_candidate_assoc.predicate_id=predicate.id 
+         LEFT JOIN marginal ON marginal.candidate_id = candidate.id;
+         
+         """)
+                get_sentimantic_engine().execute(statement)
+            except Exception:
+                print("Skip view creation")
             subject_type=sentimantic_session.query(TypeNamedEntityAssoc) \
                 .filter(TypeNamedEntityAssoc.namedentity == subject_ne).first().type
             object_type=sentimantic_session.query(TypeNamedEntityAssoc) \
@@ -67,7 +93,7 @@ def get_predicate_resume(predicate_URI):
 
 def infer_and_save_predicate_candidates_types(predicate_URI, sample_files_base_path="./data/samples/"):
     logging.info('Starting infering predicate "%s" domain, range and candidates types ', predicate_URI)
-    SentimanticSession=get_sentimanctic_session()
+    SentimanticSession=get_sentimantic_session()
     sentimantic_session=SentimanticSession()
     predicate_URI=predicate_URI.strip()
     #retrieve predicate domain
@@ -267,7 +293,7 @@ def get_predicate_domains(predicate_URI, kb_SPARQL_endpoint="https://dbpedia.org
     return domains
 
 def get_types_filter_regex():
-    SentimanticSession=get_sentimanctic_session()
+    SentimanticSession=get_sentimantic_session()
     sentimantic_session=SentimanticSession()
     types=sentimantic_session.query(Type).all()
     i=0
@@ -284,7 +310,7 @@ def get_types_filter_regex():
 def get_predicate_samples_from_KB(predicate_resume, kb_SPARQL_endpoint="https://dbpedia.org/sparql",
                                   defaultGraph="http://dbpedia.org"):
 
-    SentimanticSession=get_sentimanctic_session()
+    SentimanticSession=get_sentimantic_session()
     sentimantic_session=SentimanticSession()
     sparql = SPARQLWrapper(kb_SPARQL_endpoint, defaultGraph=defaultGraph)
 
