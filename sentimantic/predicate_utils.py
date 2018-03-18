@@ -56,7 +56,7 @@ def get_predicate_resume(predicate_URI):
                             "candidate_subclass": CandidateSubclass,
                             "subject_ne":subject_ne, "object_ne":object_ne,
                             "subject_type":subject_type, "object_type":object_type,
-                            "samples_file_path": pca.samples_file_path})
+                            "samples_file_path": pca.samples_file_path, "label_group":pca.id})
     return result
 
 
