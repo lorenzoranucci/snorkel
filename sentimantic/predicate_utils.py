@@ -4,8 +4,9 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 from type_utils import get_namedentity
 from models import get_sentimanctic_session, Type, TypeNamedEntityAssoc
 from sqlalchemy.exc import IntegrityError
-from models import get_sentimanctic_session, Predicate, BinaryCandidate, PredicateCandidateAssoc
+from models import get_sentimanctic_session, Predicate, BinaryCandidate, PredicateCandidateAssoc, get_predicate_candidate_samples_table
 from snorkel.models import candidate_subclass
+
 
 
 def save_predicate(predicate_URI):
@@ -51,12 +52,15 @@ def get_predicate_resume(predicate_URI):
             predicate_split = predicate_URI.split('/')
             predicate_split_len = len(predicate_split)
             predicate_name = predicate_split[predicate_split_len - 1].strip()
+
+            sample_class=get_predicate_candidate_samples_table("Sample"+predicate_name.title()+subject_ne.title()+object_ne.title())
             result.append({"predicate_name": predicate_name,
                             "predicate_URI": predicate_URI,
                             "candidate_subclass": CandidateSubclass,
                             "subject_ne":subject_ne, "object_ne":object_ne,
                             "subject_type":subject_type, "object_type":object_type,
-                            "samples_file_path": pca.samples_file_path, "label_group":pca.id})
+                            "label_group":pca.id, "sample_class": sample_class
+                           })
     return result
 
 
@@ -99,10 +103,8 @@ def infer_and_save_predicate_candidates_types(predicate_URI, sample_files_base_p
                     predicate_split = predicate_URI.split('/')
                     predicate_split_len = len(predicate_split)
                     predicate_name = predicate_split[predicate_split_len - 1].strip()
-                    samples_file_path=sample_files_base_path+predicate_name+candidate.subject_namedentity.title()+candidate.object_namedentity.title()+".csv"
                     pca = PredicateCandidateAssoc(predicate_id=predicate.id,
-                                                  candidate_id=candidate.id,
-                                                  samples_file_path=samples_file_path)
+                                                  candidate_id=candidate.id)
                     sentimantic_session.add(pca)
                     sentimantic_session.commit()
     logging.info('Finished infering predicate "%s" domain, range and candidates types ', predicate_URI)
@@ -282,17 +284,15 @@ def get_types_filter_regex():
 def get_predicate_samples_from_KB(predicate_resume, kb_SPARQL_endpoint="https://dbpedia.org/sparql",
                                   defaultGraph="http://dbpedia.org"):
 
-
+    SentimanticSession=get_sentimanctic_session()
+    sentimantic_session=SentimanticSession()
     sparql = SPARQLWrapper(kb_SPARQL_endpoint, defaultGraph=defaultGraph)
 
     predicate_URI=predicate_resume["predicate_URI"]
     domain=predicate_resume["subject_type"]
     range=predicate_resume["object_type"]
     logging.info('Starting downloading samples for predicate "%s" domain "%s", range "%s"', predicate_URI, domain, range)
-
-    file = open(predicate_resume["samples_file_path"], 'a+')
-    import csv
-    writer = csv.writer(file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    sample_class=predicate_resume["sample_class"]
 
     # build query
     object_type_filter=""
@@ -330,32 +330,17 @@ def get_predicate_samples_from_KB(predicate_resume, kb_SPARQL_endpoint="https://
         results_count = len(results["results"]["bindings"])
         for result in results["results"]["bindings"]:
             try:
-                subject = result["subjectLabel"]["value"].encode('utf-8').strip().replace(",", "").replace("\"", "")
-                object = result["objectLabel"]["value"].encode('utf-8').strip().replace(",", "").replace("\"", "")
-                writer.writerow([subject, object])
+                subject = result["subjectLabel"]["value"].encode('utf-8').strip().replace("\"", "")
+                object = result["objectLabel"]["value"].encode('utf-8').strip().replace("\"", "")
+                already_exist=sentimantic_session.query(sample_class).filter(sample_class.subject==subject, sample_class.object==object).count()>0
+                if not already_exist:
+                    sentimantic_session.add(sample_class(subject=subject, object=object))
+                    sentimantic_session.commit()
             except Exception as e:
                 print(e)
         offset += results_count
-    #import bz2
-    #from shutil import copyfileobj
-    #with bz2.BZ2File(predicate_resume["samples_file_path"] + '.bz2', 'wb', compresslevel=9) as output:
-    #    copyfileobj(file, output)
-    #import os
-    #os.remove(file.name)
     logging.info('Finished downloading samples for predicate "%s" domain "%s", range "%s"', predicate_URI, domain, range)
 
-# def set_predicates_candidate_file_path(base_path="./data/samples/"):
-#     SentimanticSession=get_sentimanctic_session()
-#     session=SentimanticSession()
-#     pca_list=session.query(PredicateCandidateAssoc).all()
-#     for pca in pca_list:
-#         candidate=session.query(BinaryCandidate).filter(BinaryCandidate.id==pca.candidate_id).first()
-#         predicate_split = pca.predicate_id.split('/')
-#         predicate_split_len = len(predicate_split)
-#         predicate = predicate_split[predicate_split_len - 1].strip()
-#         pca.samples_file_path=base_path+predicate+candidate.subject_namedentity.title()+candidate.object_namedentity.title()+".csv"
-#         session.flush()
-#     session.commit()
 
 
 def get_predicates_from_config(path="./predicates_list.config"):
@@ -365,3 +350,5 @@ def get_predicates_from_config(path="./predicates_list.config"):
         # you may also want to remove whitespace characters like `\n` at the end of each line
         content = [x.strip('\n') for x in content]
     return content
+
+

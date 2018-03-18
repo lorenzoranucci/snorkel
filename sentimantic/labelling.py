@@ -4,6 +4,7 @@ import logging
 import subprocess
 from xml.dom import minidom
 
+from models import get_sentimanctic_session
 from snorkel import SnorkelSession
 import requests
 from snorkel.annotations import LabelAnnotator
@@ -27,7 +28,7 @@ def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8, cle
     session = SnorkelSession()
     try:
 
-        samples_file_path=predicate_resume["samples_file_path"]
+        sample_class=predicate_resume["sample_class"]
         subject_type=predicate_resume["subject_type"]
         object_type=predicate_resume["object_type"]
         candidate_subclass=predicate_resume["candidate_subclass"]
@@ -43,12 +44,12 @@ def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8, cle
         subject_type_end=subject_type_split[len(subject_type_split)-1]
         object_type_end=object_type_split[len(object_type_split)-1]
 
-
-        with open(samples_file_path, 'rb') as csvfile:
-            reader = csv.reader(csvfile, delimiter=',', quotechar='|')
-            known_samples = set(
-                tuple(row) for row in reader
-            )
+        SentimanticSession = get_sentimanctic_session()
+        sentimantic_session = SentimanticSession()
+        samples=sentimantic_session.query(sample_class).all()
+        known_samples=set()
+        for sample in samples:
+            known_samples.add((sample.subject,sample.object))
 
         def LF_distant_supervision(c):
             subject_span=getattr(c,"subject_"+predicate_resume["subject_ne"].lower()).get_span()
@@ -236,10 +237,10 @@ def get_dbpedia_noun(ngrams, type):
                 if lev > 0.36:
                     if result==None:
                         result=[]
-                    try:
-                        label=label.decode("utf-8", errors='ignore').replace(",", "").encode("utf-8")
-                    except:
-                        label=label
+                    # try:
+                    #     label=label.decode("utf-8", errors='ignore').replace(",", "").encode("utf-8")
+                    # except:
+                    #     label=label
                     result.append(label)
         finally:
             if result != None:

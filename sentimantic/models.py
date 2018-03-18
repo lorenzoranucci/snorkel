@@ -1,9 +1,9 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Column, ForeignKey, Integer, String, UniqueConstraint, Table, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
-import traceback
+import re
 
 SentimanticBase = declarative_base(name='SentimanticBase', cls=object)
 
@@ -56,8 +56,18 @@ class PredicateCandidateAssoc(SentimanticBase):
     id = Column(Integer, primary_key=True)
     predicate_id= Column(Integer, ForeignKey('predicate.id', ondelete='CASCADE'), nullable=False)
     candidate_id= Column(Integer, ForeignKey('binarycandidate.id', ondelete='CASCADE'), nullable=False)
-    samples_file_path= Column(String(2000))
     UniqueConstraint('predicate_id', 'candidate_id')
+
+class Sample(SentimanticBase):
+    __tablename__ = 'sample'
+    id          = Column(Integer, primary_key=True)
+    type        = Column(String, nullable=False)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'sample',
+        'polymorphic_on': type
+    }
+
 
 
 
@@ -95,3 +105,51 @@ def create_database():
         engine.execute(statement)
     except Exception:
         print("Skip database creation")
+
+def get_predicate_candidate_samples_table(class_name):
+
+    table_name = camel_to_under(class_name)
+
+
+    args=[u'subject', u'object']
+    class_attribs = {
+
+        # Declares name for storage table
+        '__tablename__' : table_name,
+
+        # Connects candidate_subclass records to generic Candidate records
+        'id' : Column(
+            Integer,
+            ForeignKey('sample.id', ondelete='CASCADE'),
+            primary_key=True
+        ),
+
+        'subject':Column(String(500)),
+        'object':Column(String(500)),
+        # Polymorphism information for SQLAlchemy
+        '__mapper_args__' : {'polymorphic_identity': table_name}
+
+
+    }
+
+    C = type(class_name.encode('ascii','ignore'), (Sample,),class_attribs)
+    engine=get_sentimantic_engine()
+    if not engine.dialect.has_table(engine, table_name):
+        C.__table__.create(bind=engine)
+
+    return C
+
+
+
+def camel_to_under(name):
+    """
+    Converts camel-case string to lowercase string separated by underscores.
+
+    Written by epost
+    (http://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-snake-case).
+
+    :param name: String to be converted
+    :return: new String with camel-case converted to lowercase, underscored
+    """
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
