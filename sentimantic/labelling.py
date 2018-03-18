@@ -1,5 +1,4 @@
 import logging
-from time import gmtime, strftime
 from xml.dom import minidom
 
 from models import get_sentimanctic_session
@@ -8,10 +7,7 @@ import requests
 from snorkel.annotations import LabelAnnotator
 from nltk.util import ngrams
 import numpy as np
-from snorkel.learning import GenerativeModel
-from snorkel.annotations import save_marginals
 from textacy.similarity  import  levenshtein, jaccard, jaro_winkler, hamming, token_sort_ratio
-import matplotlib.pyplot as plt
 from snorkel.lf_helpers import (
     get_left_tokens, get_right_tokens, get_between_tokens,
     get_text_between, get_tagged_text,
@@ -21,161 +17,30 @@ from snorkel.models import  LabelKey
 
 
 def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8,  test=False, limit=None, replace_key_set=False):
-    logging.info("Starting labeling with distant supervision ")
+    logging.info("Starting labeling ")
     session = SnorkelSession()
     try:
-
-        sample_class=predicate_resume["sample_class"]
-        subject_type=predicate_resume["subject_type"]
-        object_type=predicate_resume["object_type"]
         candidate_subclass=predicate_resume["candidate_subclass"]
         key_group=predicate_resume["label_group"]
-        candidate_subclass_query=session.query(candidate_subclass).filter(candidate_subclass.split == 0)
         cids_query=session.query(candidate_subclass.id).filter(candidate_subclass.split == 0)
         if limit !=None:
             cids_query=cids_query.filter(candidate_subclass.id<limit)
-        # cids_query=session.query(Candidate.id).\
-        #     join(candidate_subclass, Candidate.id==candidate_subclass.id).\
-        #     filter(Candidate.split == 0)
-        subject_type_split = subject_type.split('/')
-        object_type_split = object_type.split('/')
-        subject_type_end=subject_type_split[len(subject_type_split)-1]
-        object_type_end=object_type_split[len(object_type_split)-1]
-
-        SentimanticSession = get_sentimanctic_session()
-        sentimantic_session = SentimanticSession()
-        samples=sentimantic_session.query(sample_class).all()
-        known_samples=set()
-        for sample in samples:
-            known_samples.add((sample.subject,sample.object))
-
-        def LF_distant_supervision(c):
-            subject_span=getattr(c,"subject_"+predicate_resume["subject_ne"].lower()).get_span()
-            object_span=getattr(c,"object_"+predicate_resume["object_ne"].lower()).get_span()
-            if (subject_span, object_span)in known_samples:
-                return 1
-
-            sample_subject_span= getattr(c,"subject_"+predicate_resume["subject_ne"].lower())
-            sample_subjects=get_nouns(sample_subject_span,subject_type_end)
-            sample_object_span = getattr(c,"object_"+predicate_resume["object_ne"].lower())
-            sample_objects=get_nouns(sample_object_span,object_type_end)
-
-            sample_subjects.append(subject_span)
-            sample_objects.append(object_span)
-            for sample_subject in sample_subjects:
-                for sample_object in sample_objects:
-                    if (sample_subject, sample_object)in known_samples:
-                        return 1
-            #todo implement date
-            #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
-            return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
-            #return -1 if np.random.rand() < 0.30 else 0
-        def LF_distant_supervision_neg(c):
-            subject_span=getattr(c,"subject_"+predicate_resume["subject_ne"].lower()).get_span()
-            object_span=getattr(c,"object_"+predicate_resume["object_ne"].lower()).get_span()
-            if (subject_span, object_span)in known_samples:
-                return 0
-
-            sample_subject_span= getattr(c,"subject_"+predicate_resume["subject_ne"].lower())
-            sample_subjects=get_nouns(sample_subject_span,subject_type_end)
-            sample_object_span = getattr(c,"object_"+predicate_resume["object_ne"].lower())
-            sample_objects=get_nouns(sample_object_span,object_type_end)
-
-            sample_subjects.append(subject_span)
-            sample_objects.append(object_span)
-            for sample_subject in sample_subjects:
-                for sample_object in sample_objects:
-                    if (sample_subject, sample_object)in known_samples:
-                        return 0
-            #todo implement date
-            return 1#-1 if len(words.intersection(c.get_parent().words)) < 1 else 0
-
-        tmp_words=set([])
-        for word in words:
-            tmp_words.add(word)
-            tmp_words.add(word.title())
-        words=tmp_words
-        def LF_words_between(c):
-            if len(words.intersection(get_between_tokens(c))) > 0:
-                return 1
-            #return -1 if np.random.rand() < 0.10 else 0
-            return 0
-        def LF_words_left(c):
-            if len(words.intersection(get_left_tokens(c))) > 0:
-                return 1
-            #return -1 if np.random.rand() < 0.10 else 0
-            return 0
-        def LF_words_right(c):
-            if len(words.intersection(get_right_tokens(c))) > 0:
-                return 1
-            #return -1 if np.random.rand() < 0.10 else 0
-            return 0
-
-        if test:
-
-            labeled = []
-            i=0
-            for c  in candidate_subclass_query.all():
-                i=i+1
-                if LF_distant_supervision(c) == 1:
-                    labeled.append(c)
-            print("Number labeled:", len(labeled))
-
-            labeled = []
-            i=0
-            for c  in candidate_subclass_query.all():
-                i=i+1
-                if LF_words_between(c) != 0:
-                    labeled.append(c)
-            print("Number labeled:", len(labeled))
-
-        else:
-
-            LFs = [
-                LF_distant_supervision, LF_words_between, LF_words_left, LF_words_right#, LF_distant_supervision_neg
-            ]
-
-            labeler = LabelAnnotator(lfs=LFs)
-            np.random.seed(1701)
-
-            if test:
-                L_train = labeler.load_matrix(session,  cids_query=cids_query, key_group=key_group)
-            else:
-                #if first run or adding a new labeling functionS is needed to set replace key set to True
-                if not replace_key_set:
-                    alreadyExistsGroup=session.query(LabelKey).filter(LabelKey.group==key_group).count()>0
-                    replace_key_set=not alreadyExistsGroup
-                L_train = labeler.apply(parallelism=parallelism, cids_query=cids_query,
-                                        key_group=key_group, clear=False, replace_key_set=replace_key_set)
-
-            L_train
-            gen_model = GenerativeModel()
-            gen_model.train(L_train, epochs=100, decay=0.95, step_size=0.1 / L_train.shape[0], reg_param=1e-6, threads=8)
-            date_time=strftime("%d-%m-%Y_%H_%M_%S", gmtime())
-            gen_model.save("G"+predicate_resume["predicate_name"]+date_time)
-            train_marginals = gen_model.marginals(L_train)
-            plt.hist(train_marginals, bins=20)
-            plt.show()
-            print(gen_model.learned_lf_stats())
-            save_marginals(session, L_train, train_marginals)
 
 
-            # gen_model.weights.lf_accuracy
-            print(L_train.get_candidate(session, 0))
-            print(L_train.get_key(session, 0))
-            print(L_train.lf_stats(session))
+        LFs = get_labelling_functions(predicate_resume, words)
 
+        labeler = LabelAnnotator(lfs=LFs)
+        np.random.seed(1701)
 
-
-            #label dev
-            # L_dev = labeler.apply_existing(split=2, parallelism=parallelism)
-            # L_dev
-            # print(L_dev.lf_stats(session))
-
-
+        #if first run or adding a new labeling functionS is needed to set replace key set to True
+        if not replace_key_set:
+            alreadyExistsGroup=session.query(LabelKey).filter(LabelKey.group==key_group).count()>0
+            replace_key_set=not alreadyExistsGroup
+        L_train = labeler.apply(parallelism=parallelism, cids_query=cids_query,
+                                key_group=key_group, clear=False, replace_key_set=replace_key_set)
 
     finally:
-        logging.info("Finished labeling with distant supervision ")
+        logging.info("Finished labeling ")
 
 
 
@@ -252,3 +117,89 @@ def get_dbpedia_noun(ngrams, type):
     if result == None:
         result=[]
     return result
+
+def get_labelling_functions(predicate_resume,words={}):
+    subject_type=predicate_resume["subject_type"]
+    object_type=predicate_resume["object_type"]
+    subject_type_split = subject_type.split('/')
+    object_type_split = object_type.split('/')
+    subject_type_end=subject_type_split[len(subject_type_split)-1]
+    object_type_end=object_type_split[len(object_type_split)-1]
+    SentimanticSession = get_sentimanctic_session()
+    sentimantic_session = SentimanticSession()
+    sample_class=predicate_resume["sample_class"]
+    samples=sentimantic_session.query(sample_class).all()
+    known_samples=set()
+    for sample in samples:
+        known_samples.add((sample.subject,sample.object))
+
+    tmp_words=set([])
+    for word in words:
+        tmp_words.add(word)
+        tmp_words.add(word.title())
+    words=tmp_words
+
+    def LF_distant_supervision(c):
+        subject_span=getattr(c,"subject_"+predicate_resume["subject_ne"].lower()).get_span()
+        object_span=getattr(c,"object_"+predicate_resume["object_ne"].lower()).get_span()
+        if (subject_span, object_span)in known_samples:
+            return 1
+
+        sample_subject_span= getattr(c,"subject_"+predicate_resume["subject_ne"].lower())
+        sample_subjects=get_nouns(sample_subject_span,subject_type_end)
+        sample_object_span = getattr(c,"object_"+predicate_resume["object_ne"].lower())
+        sample_objects=get_nouns(sample_object_span,object_type_end)
+
+        sample_subjects.append(subject_span)
+        sample_objects.append(object_span)
+        for sample_subject in sample_subjects:
+            for sample_object in sample_objects:
+                if (sample_subject, sample_object)in known_samples:
+                    return 1
+        #todo implement date
+        #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+        return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+        #return -1 if np.random.rand() < 0.30 else 0
+    def LF_distant_supervision_neg(c):
+        subject_span=getattr(c,"subject_"+predicate_resume["subject_ne"].lower()).get_span()
+        object_span=getattr(c,"object_"+predicate_resume["object_ne"].lower()).get_span()
+        if (subject_span, object_span)in known_samples:
+            return 0
+
+        sample_subject_span= getattr(c,"subject_"+predicate_resume["subject_ne"].lower())
+        sample_subjects=get_nouns(sample_subject_span,subject_type_end)
+        sample_object_span = getattr(c,"object_"+predicate_resume["object_ne"].lower())
+        sample_objects=get_nouns(sample_object_span,object_type_end)
+
+        sample_subjects.append(subject_span)
+        sample_objects.append(object_span)
+        for sample_subject in sample_subjects:
+            for sample_object in sample_objects:
+                if (sample_subject, sample_object)in known_samples:
+                    return 0
+        #todo implement date
+        return 1#-1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+
+
+
+
+    def LF_words_between(c):
+        if len(words.intersection(get_between_tokens(c))) > 0:
+            return 1
+        #return -1 if np.random.rand() < 0.10 else 0
+        return 0
+    def LF_words_left(c):
+        if len(words.intersection(get_left_tokens(c))) > 0:
+            return 1
+        #return -1 if np.random.rand() < 0.10 else 0
+        return 0
+    def LF_words_right(c):
+        if len(words.intersection(get_right_tokens(c))) > 0:
+            return 1
+        #return -1 if np.random.rand() < 0.10 else 0
+        return 0
+
+    Lfs=[
+        LF_distant_supervision, LF_words_between, LF_words_left, LF_words_right#, LF_distant_supervision_neg
+    ]
+    return Lfs
