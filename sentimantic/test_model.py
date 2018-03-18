@@ -7,29 +7,28 @@ from candidateExtraction import extract_binary_candidates
 from sqlalchemy import desc
 from sqlalchemy import or_
 
-def test_model(predicate_resume):
+def test_model(predicate_resume, model_name=None, limit=None):
 
 
     session = SnorkelSession()
     candidate_subclass=predicate_resume["candidate_subclass"]
-    test_cands  = session.query(candidate_subclass).\
-        filter(or_(candidate_subclass.id==7581,
-                   candidate_subclass.id==103456,
-                   candidate_subclass.id==9697,
-                   candidate_subclass.id==9699,
-                   candidate_subclass.id==6810,
-                   candidate_subclass.id==7663)).\
-        all()
-
-    lstm = reRNN(seed=1701, n_threads=4)
-    #lstm.train(train_cands, train_marginals,  **train_kwargs)
-
-    #p, r, f1 = lstm.score(test_cands, L_gold_test)
-    #print("Prec: {0:.3f}, Recall: {1:.3f}, F1 Score: {2:.3f}".format(p, r, f1))
-    #tp, fp, tn, fn = lstm.error_analysis(session, test_cands, L_gold_test)
+    test_cands_query  = session.query(candidate_subclass).filter(candidate_subclass.split==1)
+    if limit is not None:
+        test_cands_query.limit(limit)
+    test_cands=test_cands_query.all()
+    # filter(or_(candidate_subclass.id==7581,
+        #            candidate_subclass.id==103456,
+        #            candidate_subclass.id==9697,
+        #            candidate_subclass.id==9699,
+        #            candidate_subclass.id==6810,
+        #            candidate_subclass.id==7663)).\
 
 
-    lstm.load(predicate_resume["predicate_name"])
+    lstm = reRNN()
+
+    if model_name is None:
+        model_name="D"+predicate_resume["predicate_name"]+"Latest"
+    lstm.load(model_name)
     predictions=lstm.predictions(test_cands)
     marginals=lstm.marginals(test_cands)
     i=0
