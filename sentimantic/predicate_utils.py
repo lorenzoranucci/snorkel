@@ -51,6 +51,7 @@ def get_predicate_resume(predicate_URI):
         document.name AS docname,
         """+ candidate_name.lower() +""".id AS candid,
         candidate.split,
+        sentence.id as sent_id,
         sentence.text,
         predicate.uri as predicate_URI,
         label.value AS label_value,
@@ -68,7 +69,7 @@ def get_predicate_resume(predicate_URI):
          
          """)
                 get_sentimantic_engine().execute(statement)
-            except Exception:
+            except Exception :
                 print("Skip view creation")
             subject_type=sentimantic_session.query(TypeNamedEntityAssoc) \
                 .filter(TypeNamedEntityAssoc.namedentity == subject_ne).first().type
