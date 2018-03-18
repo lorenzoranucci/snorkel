@@ -5,7 +5,11 @@ os.environ['SNORKELDB'] = 'postgresql://sentimantic:sentimantic@postgres:5432/se
 import logging
 from models import create_database
 from corpus_parser import parse_wikipedia_dump
-from predicate_utils import save_predicate, infer_and_save_predicate_candidates_types, get_predicate_resume, get_predicate_samples_from_KB
+from predicate_utils import save_predicate, \
+    infer_and_save_predicate_candidates_types, \
+    get_predicate_resume, \
+    get_predicate_samples_from_KB, \
+    get_predicates_from_config
 from candidateExtraction import extract_binary_candidates
 from labelling import predicate_candidate_labelling
 from train_model import train_model
@@ -51,8 +55,8 @@ def start_pipeline():
     create_database()
     logging.info("Pipeline start")
     if is_to_parse_wikipedia_dump:
-        parse_wikipedia_dump(dump_file_dir, parallelism=parallelism, clear=clear)
-    predicate_URI_list=["http://dbpedia.org/ontology/birthPlace"]
+        parse_wikipedia_dump(dump_file_dir, parallelism=parallelism)
+    predicate_URI_list=get_predicates_from_config()
     for predicate_URI in predicate_URI_list:
         start_predicate_pipeline(predicate_URI)
 

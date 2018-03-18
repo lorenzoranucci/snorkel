@@ -356,3 +356,12 @@ def get_predicate_samples_from_KB(predicate_resume, kb_SPARQL_endpoint="https://
 #         pca.samples_file_path=base_path+predicate+candidate.subject_namedentity.title()+candidate.object_namedentity.title()+".csv"
 #         session.flush()
 #     session.commit()
+
+
+def get_predicates_from_config(path="./predicates_list.config"):
+    content=[]
+    with open(path) as f:
+        content = f.readlines()
+        # you may also want to remove whitespace characters like `\n` at the end of each line
+        content = [x.strip('\n') for x in content]
+    return content
