@@ -45,7 +45,7 @@ for arg in sys.argv:
         is_to_test_classifier=True
     elif arg.strip()=='clear':
         clear=True
-    elif arg.strip=='parallelism':
+    elif arg.strip()=='parallelism':
         parallelism=sys.argv[i+1]
     i=i+1
 
