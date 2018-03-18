@@ -1,7 +1,5 @@
-import os
-import csv
 import logging
-import subprocess
+from time import gmtime, strftime
 from xml.dom import minidom
 
 from models import get_sentimanctic_session
@@ -12,18 +10,17 @@ from nltk.util import ngrams
 import numpy as np
 from snorkel.learning import GenerativeModel
 from snorkel.annotations import save_marginals
-from textacy.similarity  import word2vec, levenshtein, jaccard, jaro_winkler, hamming, token_sort_ratio
-from snorkel.lf_helpers import get_matches
+from textacy.similarity  import  levenshtein, jaccard, jaro_winkler, hamming, token_sort_ratio
 import matplotlib.pyplot as plt
 from snorkel.lf_helpers import (
     get_left_tokens, get_right_tokens, get_between_tokens,
     get_text_between, get_tagged_text,
 )
 
-from snorkel.models import Label, Candidate
+from snorkel.models import  LabelKey
 
 
-def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8, clear=False, test=False, limit=None):
+def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8,  test=False, limit=None, replace_key_set=False):
     logging.info("Starting labeling with distant supervision ")
     session = SnorkelSession()
     try:
@@ -32,6 +29,7 @@ def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8, cle
         subject_type=predicate_resume["subject_type"]
         object_type=predicate_resume["object_type"]
         candidate_subclass=predicate_resume["candidate_subclass"]
+        key_group=predicate_resume["label_group"]
         candidate_subclass_query=session.query(candidate_subclass).filter(candidate_subclass.split == 0)
         cids_query=session.query(candidate_subclass.id).filter(candidate_subclass.split == 0)
         if limit !=None:
@@ -90,7 +88,7 @@ def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8, cle
                     if (sample_subject, sample_object)in known_samples:
                         return 0
             #todo implement date
-            return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+            return 1#-1 if len(words.intersection(c.get_parent().words)) < 1 else 0
 
         tmp_words=set([])
         for word in words:
@@ -141,14 +139,20 @@ def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8, cle
             np.random.seed(1701)
 
             if test:
-                L_train = labeler.load_matrix(session,  cids_query=cids_query)
+                L_train = labeler.load_matrix(session,  cids_query=cids_query, key_group=key_group)
             else:
-                L_train = labeler.apply(parallelism=parallelism, cids_query=cids_query, clear=clear)
+                #if first run or adding a new labeling functionS is needed to set replace key set to True
+                if not replace_key_set:
+                    alreadyExistsGroup=session.query(LabelKey).filter(LabelKey.group==key_group).count()>0
+                    replace_key_set=not alreadyExistsGroup
+                L_train = labeler.apply(parallelism=parallelism, cids_query=cids_query,
+                                        key_group=key_group, clear=False, replace_key_set=replace_key_set)
 
             L_train
             gen_model = GenerativeModel()
             gen_model.train(L_train, epochs=100, decay=0.95, step_size=0.1 / L_train.shape[0], reg_param=1e-6, threads=8)
-
+            date_time=strftime("%d-%m-%Y_%H_%M_%S", gmtime())
+            gen_model.save("G"+predicate_resume["predicate_name"]+date_time)
             train_marginals = gen_model.marginals(L_train)
             plt.hist(train_marginals, bins=20)
             plt.show()
