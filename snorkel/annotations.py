@@ -509,7 +509,9 @@ def save_marginals(session, X, marginals, training=True):
 
     # Prepare values
     insert_vals = []
+    j=0
     for i, k, p in marginal_tuples:
+        j=j+1
         cid = X.get_candidate(session, i).id if anno_matrix else X[i].id
         insert_vals.append({
             'candidate_id': cid,
@@ -518,6 +520,12 @@ def save_marginals(session, X, marginals, training=True):
             # We cast p in case its a numpy type, which psycopg2 does not handle
             'probability': float(p)
         })
+        if j > 99:
+            j=0
+            session.execute(q, insert_vals)
+            insert_vals=[]
+
+
 
     # Execute update
     session.execute(q, insert_vals)
