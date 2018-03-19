@@ -120,11 +120,15 @@ def count_predicate_samples(predicate_URI, kb_SPARQL_endpoint="https://dbpedia.o
 
 
 def get_predicates_from_config(path="./predicates_list.config"):
-    content=[]
+    result=[]
     with open(path) as f:
         content = f.readlines()
-        content = [x.strip().strip('\n') for x in content]
-    return content
+        for x in content:
+            x=x.strip().strip('\n')
+            if '+' in x[0]:
+                continue
+            result.append(x)
+    return result
 
 
 def get_predicate_words_from_config(predicate_URI, path="./predicates_list.config"):
