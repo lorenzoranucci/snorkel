@@ -66,12 +66,13 @@ def execute_query(predicate_resume,offset, page_size=10000, language='en',
                 try:
                     subject = result["subjectLabel"]["value"].encode('utf-8').strip().replace("\"", "")
                     object = result["objectLabel"]["value"].encode('utf-8').strip().replace("\"", "")
-                    already_exist=sentimantic_session.query(sample_class).filter(sample_class.subject==subject, sample_class.object==object).count()>0
-                    if not already_exist:
-                        sentimantic_session.add(sample_class(subject=subject, object=object))
-                        sentimantic_session.commit()
+                    #already_exist=sentimantic_session.query(sample_class).filter(sample_class.subject==subject, sample_class.object==object).count()>0
+                    #if not already_exist:
+                    sentimantic_session.add(sample_class(subject=subject, object=object))
+                    sentimantic_session.flush()
                 except Exception as e:
-                    print(e)
+                    True
+            sentimantic_session.commit()
         except Exception as http_error:
             completed=False
             time.sleep(5)
