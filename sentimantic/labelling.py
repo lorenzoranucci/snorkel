@@ -44,6 +44,95 @@ def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8,  te
 
 
 
+
+
+def get_labelling_functions(predicate_resume,words={}):
+    subject_type=predicate_resume["subject_type"]
+    object_type=predicate_resume["object_type"]
+    subject_type_split = subject_type.split('/')
+    object_type_split = object_type.split('/')
+    subject_type_end=subject_type_split[len(subject_type_split)-1]
+    object_type_end=object_type_split[len(object_type_split)-1]
+    SentimanticSession = get_sentimantic_session()
+    sentimantic_session = SentimanticSession()
+    sample_class=predicate_resume["sample_class"]
+    samples=sentimantic_session.query(sample_class).all()
+    known_samples=set()
+    for sample in samples:
+        known_samples.add((sample.subject,sample.object))
+
+    tmp_words=set([])
+    for word in words:
+        tmp_words.add(word)
+        tmp_words.add(word.title())
+    words=tmp_words
+
+    def LF_distant_supervision(c):
+        subject_span=getattr(c,"subject").get_span()
+        object_span=getattr(c,"object").get_span()
+        if (subject_span, object_span)in known_samples:
+            return 1
+
+        sample_subject_span= getattr(c,"subject_"+predicate_resume["subject_ne"].lower())
+        sample_subjects=get_nouns(sample_subject_span,subject_type_end)
+        sample_object_span = getattr(c,"object_"+predicate_resume["object_ne"].lower())
+        sample_objects=get_nouns(sample_object_span,object_type_end)
+
+        sample_subjects.append(subject_span)
+        sample_objects.append(object_span)
+        for sample_subject in sample_subjects:
+            for sample_object in sample_objects:
+                if (sample_subject, sample_object)in known_samples:
+                    return 1
+        #todo implement date
+        #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+        return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+        #return -1 if np.random.rand() < 0.30 else 0
+    def LF_distant_supervision_neg(c):
+        subject_span=getattr(c,"subject_"+predicate_resume["subject_ne"].lower()).get_span()
+        object_span=getattr(c,"object_"+predicate_resume["object_ne"].lower()).get_span()
+        if (subject_span, object_span)in known_samples:
+            return 0
+
+        sample_subject_span= getattr(c,"subject_"+predicate_resume["subject_ne"].lower())
+        sample_subjects=get_nouns(sample_subject_span,subject_type_end)
+        sample_object_span = getattr(c,"object_"+predicate_resume["object_ne"].lower())
+        sample_objects=get_nouns(sample_object_span,object_type_end)
+
+        sample_subjects.append(subject_span)
+        sample_objects.append(object_span)
+        for sample_subject in sample_subjects:
+            for sample_object in sample_objects:
+                if (sample_subject, sample_object)in known_samples:
+                    return 0
+        #todo implement date
+        return 1#-1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+
+
+
+
+    def LF_words_between(c):
+        if len(words.intersection(get_between_tokens(c))) > 0:
+            return 1
+        #return -1 if np.random.rand() < 0.10 else 0
+        return 0
+    def LF_words_left(c):
+        if len(words.intersection(get_left_tokens(c))) > 0:
+            return 1
+        #return -1 if np.random.rand() < 0.10 else 0
+        return 0
+    def LF_words_right(c):
+        if len(words.intersection(get_right_tokens(c))) > 0:
+            return 1
+        #return -1 if np.random.rand() < 0.10 else 0
+        return 0
+
+    Lfs=[
+        LF_distant_supervision, LF_words_between, LF_words_left, LF_words_right#, LF_distant_supervision_neg
+    ]
+    return Lfs
+
+
 def get_nouns(span, type):
     clean_noun=get_clean_noun(span)
     ngrams=get_ngrams(clean_noun)
@@ -117,89 +206,3 @@ def get_dbpedia_noun(ngrams, type):
     if result == None:
         result=[]
     return result
-
-def get_labelling_functions(predicate_resume,words={}):
-    subject_type=predicate_resume["subject_type"]
-    object_type=predicate_resume["object_type"]
-    subject_type_split = subject_type.split('/')
-    object_type_split = object_type.split('/')
-    subject_type_end=subject_type_split[len(subject_type_split)-1]
-    object_type_end=object_type_split[len(object_type_split)-1]
-    SentimanticSession = get_sentimantic_session()
-    sentimantic_session = SentimanticSession()
-    sample_class=predicate_resume["sample_class"]
-    samples=sentimantic_session.query(sample_class).all()
-    known_samples=set()
-    for sample in samples:
-        known_samples.add((sample.subject,sample.object))
-
-    tmp_words=set([])
-    for word in words:
-        tmp_words.add(word)
-        tmp_words.add(word.title())
-    words=tmp_words
-
-    def LF_distant_supervision(c):
-        subject_span=getattr(c,"subject_"+predicate_resume["subject_ne"].lower()).get_span()
-        object_span=getattr(c,"object_"+predicate_resume["object_ne"].lower()).get_span()
-        if (subject_span, object_span)in known_samples:
-            return 1
-
-        sample_subject_span= getattr(c,"subject_"+predicate_resume["subject_ne"].lower())
-        sample_subjects=get_nouns(sample_subject_span,subject_type_end)
-        sample_object_span = getattr(c,"object_"+predicate_resume["object_ne"].lower())
-        sample_objects=get_nouns(sample_object_span,object_type_end)
-
-        sample_subjects.append(subject_span)
-        sample_objects.append(object_span)
-        for sample_subject in sample_subjects:
-            for sample_object in sample_objects:
-                if (sample_subject, sample_object)in known_samples:
-                    return 1
-        #todo implement date
-        #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
-        return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
-        #return -1 if np.random.rand() < 0.30 else 0
-    def LF_distant_supervision_neg(c):
-        subject_span=getattr(c,"subject_"+predicate_resume["subject_ne"].lower()).get_span()
-        object_span=getattr(c,"object_"+predicate_resume["object_ne"].lower()).get_span()
-        if (subject_span, object_span)in known_samples:
-            return 0
-
-        sample_subject_span= getattr(c,"subject_"+predicate_resume["subject_ne"].lower())
-        sample_subjects=get_nouns(sample_subject_span,subject_type_end)
-        sample_object_span = getattr(c,"object_"+predicate_resume["object_ne"].lower())
-        sample_objects=get_nouns(sample_object_span,object_type_end)
-
-        sample_subjects.append(subject_span)
-        sample_objects.append(object_span)
-        for sample_subject in sample_subjects:
-            for sample_object in sample_objects:
-                if (sample_subject, sample_object)in known_samples:
-                    return 0
-        #todo implement date
-        return 1#-1 if len(words.intersection(c.get_parent().words)) < 1 else 0
-
-
-
-
-    def LF_words_between(c):
-        if len(words.intersection(get_between_tokens(c))) > 0:
-            return 1
-        #return -1 if np.random.rand() < 0.10 else 0
-        return 0
-    def LF_words_left(c):
-        if len(words.intersection(get_left_tokens(c))) > 0:
-            return 1
-        #return -1 if np.random.rand() < 0.10 else 0
-        return 0
-    def LF_words_right(c):
-        if len(words.intersection(get_right_tokens(c))) > 0:
-            return 1
-        #return -1 if np.random.rand() < 0.10 else 0
-        return 0
-
-    Lfs=[
-        LF_distant_supervision, LF_words_between, LF_words_left, LF_words_right#, LF_distant_supervision_neg
-    ]
-    return Lfs

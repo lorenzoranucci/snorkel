@@ -32,8 +32,8 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8, sent
 
     sents_count=sents_query.count()
 
-    if sents_count > 1000000:
-        page=100000
+    if sents_count > 100000:
+        page=10000
     else:
         page=sents_count/10 #split in 10 chunks
     i=1
