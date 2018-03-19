@@ -16,7 +16,7 @@ from snorkel.lf_helpers import (
 from snorkel.models import  LabelKey
 
 
-def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8,  test=False, limit=None, replace_key_set=False):
+def predicate_candidate_labelling(predicate_resume,  parallelism=8,  test=False, limit=None, replace_key_set=False):
     logging.info("Starting labeling ")
     session = SnorkelSession()
     try:
@@ -27,7 +27,7 @@ def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8,  te
             cids_query=cids_query.filter(candidate_subclass.id<limit)
 
 
-        LFs = get_labelling_functions(predicate_resume, words)
+        LFs = get_labelling_functions(predicate_resume)
 
         labeler = LabelAnnotator(lfs=LFs)
         np.random.seed(1701)
@@ -46,7 +46,7 @@ def predicate_candidate_labelling(predicate_resume, words={}, parallelism=8,  te
 
 
 
-def get_labelling_functions(predicate_resume,words={}):
+def get_labelling_functions(predicate_resume):
     subject_type=predicate_resume["subject_type"]
     object_type=predicate_resume["object_type"]
     subject_type_split = subject_type.split('/')
@@ -62,7 +62,7 @@ def get_labelling_functions(predicate_resume,words={}):
         known_samples.add((sample.subject,sample.object))
 
     tmp_words=set([])
-    for word in words:
+    for word in predicate_resume["words"]:
         tmp_words.add(word)
         tmp_words.add(word.title())
     words=tmp_words

@@ -77,14 +77,15 @@ def get_predicate_resume(predicate_URI):
                 .filter(TypeNamedEntityAssoc.namedentity == object_ne).first().type
 
             predicate_name = get_predicate_name(predicate_URI)
-
+            words=get_predicate_words_from_config(predicate_URI)
             sample_class=get_predicate_candidate_samples_table("Sample"+predicate_name.title()+subject_ne.title()+object_ne.title())
             result.append({"predicate_name": predicate_name,
                             "predicate_URI": predicate_URI,
                             "candidate_subclass": CandidateSubclass,
                             "subject_ne":subject_ne, "object_ne":object_ne,
                             "subject_type":subject_type, "object_type":object_type,
-                            "label_group":pca.id, "sample_class": sample_class
+                            "label_group":pca.id, "sample_class": sample_class,
+                            "words":words
                            })
     return result
 
@@ -122,8 +123,23 @@ def get_predicates_from_config(path="./predicates_list.config"):
     content=[]
     with open(path) as f:
         content = f.readlines()
-        # you may also want to remove whitespace characters like `\n` at the end of each line
-        content = [x.strip('\n') for x in content]
+        content = [x.strip().strip('\n') for x in content]
     return content
 
 
+def get_predicate_words_from_config(predicate_URI, path="./predicates_list.config"):
+    result = []
+    with open(path) as f:
+        content = f.readlines()
+        read_words=False
+        for x in content:
+            x=x.strip().strip('\n')
+            if read_words:
+                if '+' in x[0]:
+                    result.append(x[1:])
+                else:
+                    break
+            else:
+                if x == predicate_URI:
+                    read_words = True
+    return result
