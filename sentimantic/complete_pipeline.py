@@ -16,7 +16,6 @@ from test_model import test_model
 logging.basicConfig(filename='sentimantic.log',level=logging.DEBUG, format='%(asctime)s %(message)s')
 dump_file_dir="../../data/wikipedia/dump/en/extracted_text/AA/"
 dump_file_name="wiki_00.xml"
-clear=False
 parallelism=32
 is_to_parse_wikipedia_dump=False
 is_to_infer_candidate_types=False
@@ -41,8 +40,6 @@ for arg in sys.argv:
         is_to_train_classifier=True
     elif arg.strip()=='test':
         is_to_test_classifier=True
-    elif arg.strip()=='clear':
-        clear=True
     elif arg.strip()=='parallelism':
         parallelism=sys.argv[i+1]
     i=i+1
@@ -75,7 +72,7 @@ def start_predicate_domain_range_pipeline(predicate_resume):
         get_predicate_samples_from_KB(predicate_resume)
     #candidates extraction
     if is_to_extract_candidates:
-        extract_binary_candidates(predicate_resume, parallelism=parallelism, clear=clear)
+        extract_binary_candidates(predicate_resume, parallelism=parallelism)
     #candidates labeling with distant supervision
     if is_to_label:
         predicate_candidate_labelling(predicate_resume, parallelism=parallelism,   test=False)

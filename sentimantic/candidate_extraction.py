@@ -1,13 +1,13 @@
-import os
 import logging
 from snorkel import SnorkelSession
-from snorkel.models import candidate_subclass
+from snorkel.models import Span
 from snorkel.candidates import Ngrams, CandidateExtractor
 from snorkel.matchers import PersonMatcher, DateMatcher,  OrganizationMatcher
 from matchers import GPEMatcher, EventMatcher, WorkOfArtMatcher, LanguageMatcher
 from snorkel.models import Sentence
 
-def extract_binary_candidates(predicate_resume, clear=False, parallelism=8, sents_query=None, split=None):
+
+def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,  split=None):
     #create span and candidates
     logging.info("Starting candidates extraction ")
     subject_ne=predicate_resume['subject_ne']
@@ -15,10 +15,7 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8, sent
 
     session = SnorkelSession()
     CandidateSubclass = predicate_resume["candidate_subclass"]
-    candidates_count = session.query(CandidateSubclass).count()
-    if candidates_count>1 and clear==False:
-        logging.warn("Candidates already extracted, skipping...")
-        return
+
 
     ngrams= Ngrams(n_max=10)
     subject_matcher = get_matcher(subject_ne)
@@ -27,9 +24,12 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8, sent
                                         nested_relations=True,
                                         symmetric_relations=True)
 
-    if sents_query==None:
-        sents_query=session.query(Sentence)
-
+    #skip sentences already extracted
+    sents_query= session.query(Sentence)
+    candidates_count = session.query(CandidateSubclass).count()
+    if candidates_count>1 and clear==False:
+        subquery=session.query(Sentence.id).join(Span, Span.sentence_id==Sentence.id).join(CandidateSubclass,CandidateSubclass.subject_id==Span.id)
+        sents_query= session.query(Sentence).filter(~Sentence.id.in_(subquery))
     sents_count=sents_query.count()
 
     if sents_count > 100000:
