@@ -1,9 +1,8 @@
 from snorkel import SnorkelSession
-from snorkel.annotations import load_marginals
 from snorkel.learning.disc_models.rnn import reRNN
-from snorkel.models import Marginal, Document, Sentence, Candidate, Span
+from snorkel.models import Sentence, Candidate
 from corpus_parser import parse_wikipedia_dump
-from candidateExtraction import extract_binary_candidates
+from candidate_extraction import extract_binary_candidates
 from sqlalchemy import desc
 from sqlalchemy import or_
 
