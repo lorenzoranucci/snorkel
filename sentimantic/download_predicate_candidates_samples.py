@@ -34,7 +34,7 @@ def get_predicate_samples_from_KB(predicate_resume, kb_SPARQL_endpoint="https://
         for t in threads:
             if  not t.isAlive():
                 threads.remove(t)
-        if len(threads) < 0:
+        if len(threads) < 1:
             break
 
 
@@ -69,10 +69,9 @@ def execute_query(predicate_resume,offset, page_size=10000, language='en',
                     #already_exist=sentimantic_session.query(sample_class).filter(sample_class.subject==subject, sample_class.object==object).count()>0
                     #if not already_exist:
                     sentimantic_session.add(sample_class(subject=subject, object=object))
-                    sentimantic_session.flush()
+                    sentimantic_session.commit()
                 except Exception as e:
                     True
-            sentimantic_session.commit()
         except Exception as http_error:
             completed=False
             time.sleep(5)
