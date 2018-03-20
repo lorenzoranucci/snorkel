@@ -6,7 +6,7 @@ from snorkel.learning.disc_models.rnn import reRNN
 from snorkel.models import Marginal
 from labelling import get_labelling_functions
 from snorkel.annotations import save_marginals
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import shutil
 
 
@@ -31,14 +31,14 @@ def train_model(predicate_resume, parallelism=8, words={}):
     gen_model.save("G"+predicate_resume["predicate_name"]+"Latest")
 
     train_marginals = gen_model.marginals(L_train)
-    plt.hist(train_marginals, bins=20)
-    plt.show()
+    #plt.hist(train_marginals, bins=20)
+    #plt.show()
     #print(gen_model.learned_lf_stats())
     save_marginals(session, L_train, train_marginals)
     # gen_model.weights.lf_accuracy
     #print(L_train.get_candidate(session, 0))
     #print(L_train.get_key(session, 0))
-    print(L_train.lf_stats(session))
+    #print(L_train.lf_stats(session))
 
     cids_query=session.query(candidate_subclass.id). \
         join(Marginal, Marginal.candidate_id==candidate_subclass.id). \
