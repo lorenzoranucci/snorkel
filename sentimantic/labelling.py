@@ -66,10 +66,10 @@ def get_labelling_functions(predicate_resume):
     SentimanticSession = get_sentimantic_session()
     sentimantic_session = SentimanticSession()
     sample_class=predicate_resume["sample_class"]
-    samples=sentimantic_session.query(sample_class).all()
-    known_samples=set()
-    for sample in samples:
-        known_samples.add((sample.subject,sample.object))
+    #samples=sentimantic_session.query(sample_class).all()
+    # known_samples=set()
+    # for sample in samples:
+    #     known_samples.add((sample.subject,sample.object))
 
     tmp_words=set([])
     for word in predicate_resume["words"]:
@@ -80,7 +80,8 @@ def get_labelling_functions(predicate_resume):
     def LF_distant_supervision(c):
         subject_span=getattr(c,"subject").get_span()
         object_span=getattr(c,"object").get_span()
-        if (subject_span, object_span)in known_samples:
+        # if (subject_span, object_span)in known_samples:
+        if is_in_known_samples(predicate_resume,sentimantic_session,subject_span,object_span):
             return 1
 
         sample_subject_span= getattr(c,"subject")
@@ -92,31 +93,32 @@ def get_labelling_functions(predicate_resume):
         sample_objects.append(object_span)
         for sample_subject in sample_subjects:
             for sample_object in sample_objects:
-                if (sample_subject, sample_object)in known_samples:
+                # if (sample_subject, sample_object)in known_samples:
+                if is_in_known_samples(predicate_resume,sentimantic_session,sample_subject,sample_object):
                     return 1
         #todo implement date
         #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
         return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
         #return -1 if np.random.rand() < 0.30 else 0
-    def LF_distant_supervision_neg(c):
-        subject_span=getattr(c,"subject").get_span()
-        object_span=getattr(c,"object").get_span()
-        if (subject_span, object_span)in known_samples:
-            return 0
-
-        sample_subject_span= getattr(c,"subject")
-        sample_subjects=get_nouns(sample_subject_span,subject_type_end)
-        sample_object_span = getattr(c,"object")
-        sample_objects=get_nouns(sample_object_span,object_type_end)
-
-        sample_subjects.append(subject_span)
-        sample_objects.append(object_span)
-        for sample_subject in sample_subjects:
-            for sample_object in sample_objects:
-                if (sample_subject, sample_object)in known_samples:
-                    return 0
-        #todo implement date
-        return 1#-1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+    # def LF_distant_supervision_neg(c):
+    #     subject_span=getattr(c,"subject").get_span()
+    #     object_span=getattr(c,"object").get_span()
+    #     if (subject_span, object_span)in known_samples:
+    #         return 0
+    #
+    #     sample_subject_span= getattr(c,"subject")
+    #     sample_subjects=get_nouns(sample_subject_span,subject_type_end)
+    #     sample_object_span = getattr(c,"object")
+    #     sample_objects=get_nouns(sample_object_span,object_type_end)
+    #
+    #     sample_subjects.append(subject_span)
+    #     sample_objects.append(object_span)
+    #     for sample_subject in sample_subjects:
+    #         for sample_object in sample_objects:
+    #             if (sample_subject, sample_object)in known_samples:
+    #                 return 0
+    #     #todo implement date
+    #     return 1#-1 if len(words.intersection(c.get_parent().words)) < 1 else 0
 
 
 
@@ -216,3 +218,10 @@ def get_dbpedia_noun(ngrams, type):
     if result == None:
         result=[]
     return result
+
+def is_in_known_samples(predicate_resume,session,subject,object):
+    sample_class=predicate_resume["sample_class"]
+    return session.query(sample_class).\
+               filter(sample_class.subject.like("%"+subject+"%")).\
+               filter(sample_class.object.like("%"+object+"%")).\
+               count()>0
