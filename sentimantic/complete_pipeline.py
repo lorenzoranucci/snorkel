@@ -69,7 +69,7 @@ def start_predicate_pipeline(predicate_URI):
 def start_predicate_domain_range_pipeline(predicate_resume):
     #download samples from knowledge base
     if is_to_download_samples_from_kb:
-        get_predicate_samples_from_KB(predicate_resume)
+        get_predicate_samples_from_KB(predicate_resume, parallelism=parallelism)
     #candidates extraction
     if is_to_extract_candidates:
         extract_binary_candidates(predicate_resume, parallelism=parallelism)
