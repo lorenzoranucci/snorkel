@@ -13,7 +13,7 @@ from snorkel.lf_helpers import (
     get_text_between, get_tagged_text,
 )
 
-from snorkel.models import  LabelKey
+from snorkel.models import LabelKey, Candidate, Label
 
 
 def predicate_candidate_labelling(predicate_resume,  parallelism=8,  test=False, limit=None, replace_key_set=False):
@@ -22,7 +22,18 @@ def predicate_candidate_labelling(predicate_resume,  parallelism=8,  test=False,
     try:
         candidate_subclass=predicate_resume["candidate_subclass"]
         key_group=predicate_resume["label_group"]
+
         cids_query=session.query(candidate_subclass.id).filter(candidate_subclass.split == 0)
+        #skip cands already extracted
+        alreadyExistsGroup=session.query(LabelKey).filter(LabelKey.group==key_group).count()>0
+        if alreadyExistsGroup:
+            subquery=session.query(candidate_subclass.id).\
+                join(Label, Label.candidate_id==candidate_subclass.id).\
+                join(LabelKey,LabelKey.id==Label.key_id).\
+                filter(LabelKey.group==key_group)
+
+            cids_query= session.query(candidate_subclass.id).filter(~candidate_subclass.id.in_(subquery)).filter(candidate_subclass.split == 0)
+
         if limit !=None:
             cids_query=cids_query.filter(candidate_subclass.id<limit)
 
@@ -34,7 +45,6 @@ def predicate_candidate_labelling(predicate_resume,  parallelism=8,  test=False,
 
         #if first run or adding a new labeling functionS is needed to set replace key set to True
         if not replace_key_set:
-            alreadyExistsGroup=session.query(LabelKey).filter(LabelKey.group==key_group).count()>0
             replace_key_set=not alreadyExistsGroup
         L_train = labeler.apply(parallelism=parallelism, cids_query=cids_query,
                                 key_group=key_group, clear=False, replace_key_set=replace_key_set)

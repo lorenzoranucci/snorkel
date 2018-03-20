@@ -25,8 +25,13 @@ where{
 ?o a <http://dbpedia.org/ontology/Country>
 }
 
-
-
+#predicati con gli stessi tipi
+select distinct ?p
+where{
+?p <http://www.w3.org/2000/01/rdf-schema#domain> <http://dbpedia.org/ontology/Person>.
+?p <http://www.w3.org/2000/01/rdf-schema#range> <http://dbpedia.org/ontology/Place>
+}
+LIMIT 10
 
 #COPPIE DI TIPI DI SOGGETTO E OGGETTO PIÙ COMUNI PER UN PREDICATO
 SELECT ?typeCouple COUNT (?typeCouple) AS ?typeCoupleCount

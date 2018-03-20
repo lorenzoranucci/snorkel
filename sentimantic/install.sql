@@ -21,3 +21,19 @@ INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.o
 INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Work', 'WORK_OF_ART');
 INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Language', 'LANGUAGE');
 INSERT INTO type_namedentity_assoc (type, namedentity) VALUES ('http://dbpedia.org/ontology/Award', 'ORG');
+
+CREATE OR REPLACE VIEW persongpe_candidate AS
+SELECT document.id AS docid,
+    document.name AS docname,
+    persongpe.id AS candid,
+    candidate.split,
+    sentence.text,
+    label.value AS label_value,
+    marginal.probability
+   FROM persongpe
+     JOIN candidate ON candidate.id = persongpe.id
+     JOIN span ON persongpe.subject_person_id = span.id
+     JOIN sentence ON span.sentence_id = sentence.id
+     JOIN document ON sentence.document_id = document.id
+     LEFT JOIN label ON candidate.id = label.candidate_id
+     LEFT JOIN marginal ON marginal.candidate_id = candidate.id;
