@@ -13,7 +13,7 @@ from labelling import predicate_candidate_labelling
 from train_model import train_model
 from test_model import test_model
 
-logging.basicConfig(filename='sentimantic.log',level=logging.DEBUG, format='%(asctime)s %(message)s')
+logging.basicConfig(filename='sentimantic.log',level=logging.INFO, format='%(asctime)s %(message)s')
 dump_file_dir="../../data/wikipedia/dump/en/extracted_text/AA/"
 dump_file_name="wiki_00.xml"
 parallelism=32
