@@ -73,9 +73,9 @@ def get_labelling_functions(predicate_resume):
         if (subject_span, object_span)in known_samples:
             return 1
 
-        sample_subject_span= getattr(c,"subject_"+predicate_resume["subject_ne"].lower())
+        sample_subject_span= getattr(c,"subject")
         sample_subjects=get_nouns(sample_subject_span,subject_type_end)
-        sample_object_span = getattr(c,"object_"+predicate_resume["object_ne"].lower())
+        sample_object_span = getattr(c,"object")
         sample_objects=get_nouns(sample_object_span,object_type_end)
 
         sample_subjects.append(subject_span)
@@ -89,14 +89,14 @@ def get_labelling_functions(predicate_resume):
         return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
         #return -1 if np.random.rand() < 0.30 else 0
     def LF_distant_supervision_neg(c):
-        subject_span=getattr(c,"subject_"+predicate_resume["subject_ne"].lower()).get_span()
-        object_span=getattr(c,"object_"+predicate_resume["object_ne"].lower()).get_span()
+        subject_span=getattr(c,"subject").get_span()
+        object_span=getattr(c,"object").get_span()
         if (subject_span, object_span)in known_samples:
             return 0
 
-        sample_subject_span= getattr(c,"subject_"+predicate_resume["subject_ne"].lower())
+        sample_subject_span= getattr(c,"subject")
         sample_subjects=get_nouns(sample_subject_span,subject_type_end)
-        sample_object_span = getattr(c,"object_"+predicate_resume["object_ne"].lower())
+        sample_object_span = getattr(c,"object")
         sample_objects=get_nouns(sample_object_span,object_type_end)
 
         sample_subjects.append(subject_span)
