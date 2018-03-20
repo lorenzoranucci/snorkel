@@ -18,7 +18,7 @@ def train_model(predicate_resume, parallelism=8, words={}):
     candidate_subclass=predicate_resume["candidate_subclass"]
     cids_query=session.query(candidate_subclass.id).filter(candidate_subclass.split == 0)
     key_group=predicate_resume["label_group"]
-    LFs = get_labelling_functions(predicate_resume,words)
+    LFs = get_labelling_functions(predicate_resume)
     labeler = LabelAnnotator(lfs=LFs)
     L_train = labeler.load_matrix(session,  cids_query=cids_query, key_group=key_group)
     gen_model = GenerativeModel()
