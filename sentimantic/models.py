@@ -132,8 +132,11 @@ def get_predicate_candidate_samples_table(class_name):
         # Polymorphism information for SQLAlchemy
         '__mapper_args__' : {'polymorphic_identity': table_name}
 
-
     }
+    # Add unique constraints to the arguments
+    class_attribs['__table_args__'] = (
+        UniqueConstraint("subject","object"),
+    )
 
     C = type(class_name.encode('ascii','ignore'), (Sample,),class_attribs)
     engine=get_sentimantic_engine()
