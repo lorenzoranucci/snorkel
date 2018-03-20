@@ -1,6 +1,8 @@
 import logging
 from xml.dom import minidom
 
+import time
+
 from models import get_sentimantic_session
 from snorkel import SnorkelSession
 import requests
@@ -78,27 +80,31 @@ def get_labelling_functions(predicate_resume):
     words=tmp_words
 
     def LF_distant_supervision(c):
-        subject_span=getattr(c,"subject").get_span()
-        object_span=getattr(c,"object").get_span()
-        # if (subject_span, object_span)in known_samples:
-        if is_in_known_samples(predicate_resume,sentimantic_session,subject_span,object_span):
-            return 1
+        try:
+            subject_span=getattr(c,"subject").get_span()
+            object_span=getattr(c,"object").get_span()
+            # if (subject_span, object_span)in known_samples:
+            if is_in_known_samples(predicate_resume,sentimantic_session,subject_span,object_span):
+                return 1
 
-        sample_subject_span= getattr(c,"subject")
-        sample_subjects=get_nouns(sample_subject_span,subject_type_end)
-        sample_object_span = getattr(c,"object")
-        sample_objects=get_nouns(sample_object_span,object_type_end)
+            sample_subject_span= getattr(c,"subject")
+            sample_subjects=get_nouns(sample_subject_span,subject_type_end)
+            sample_object_span = getattr(c,"object")
+            sample_objects=get_nouns(sample_object_span,object_type_end)
 
-        sample_subjects.append(subject_span)
-        sample_objects.append(object_span)
-        for sample_subject in sample_subjects:
-            for sample_object in sample_objects:
-                # if (sample_subject, sample_object)in known_samples:
-                if is_in_known_samples(predicate_resume,sentimantic_session,sample_subject,sample_object):
-                    return 1
-        #todo implement date
-        #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
-        return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+            sample_subjects.append(subject_span)
+            sample_objects.append(object_span)
+            for sample_subject in sample_subjects:
+                for sample_object in sample_objects:
+                    # if (sample_subject, sample_object)in known_samples:
+                    if is_in_known_samples(predicate_resume,sentimantic_session,sample_subject,sample_object):
+                        return 1
+            #todo implement date
+            #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+            return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+        except Exception as e:
+            print(e)
+            print("Not found candidate"+str(c.id))
         #return -1 if np.random.rand() < 0.30 else 0
     # def LF_distant_supervision_neg(c):
     #     subject_span=getattr(c,"subject").get_span()
@@ -182,7 +188,7 @@ def get_dbpedia_noun(ngrams, type):
                 response_subject=requests.get("http://lookup:1111/api/search/PrefixSearch",{"MaxHits":4,"QueryClass":type,"QueryString":noun})
                 response_ok=response_subject.ok
             except Exception:
-                print("")
+                time.sleep(5)
 
         try:
             max_refcount=-1
@@ -221,7 +227,9 @@ def get_dbpedia_noun(ngrams, type):
 
 def is_in_known_samples(predicate_resume,session,subject,object):
     sample_class=predicate_resume["sample_class"]
-    return session.query(sample_class).\
-               filter(sample_class.subject.like("%"+subject+"%")).\
-               filter(sample_class.object.like("%"+object+"%")).\
+    return session.query(sample_class). \
+        filter(sample_class.subject==subject). \
+        filter(sample_class.object==object).\
                count()>0
+        # filter(sample_class.subject.like("%"+subject+"%")).\
+               # filter(sample_class.object.like("%"+object+"%")).\
