@@ -80,7 +80,7 @@ def start_predicate_domain_range_pipeline(predicate_resume):
     if is_to_train_classifier:
         train_model(predicate_resume, parallelism=parallelism)
     if is_to_test_classifier:
-        test_model(predicate_resume, model_name="DbirthPlace18-03-2018_19_54_43")
+        test_model(predicate_resume)
 
 
 
