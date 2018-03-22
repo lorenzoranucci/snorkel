@@ -1,17 +1,22 @@
+import logging
 from snorkel import SnorkelSession
 from snorkel.learning.disc_models.rnn import reRNN
 from snorkel.models import Sentence, Candidate
 from corpus_parser import parse_wikipedia_dump
 from candidate_extraction import extract_binary_candidates
 from sqlalchemy import desc
+from snorkel.annotations import load_gold_labels
 from sqlalchemy import or_
 
 def test_model(predicate_resume, model_name=None, limit=None):
-
+    logging
 
     session = SnorkelSession()
     candidate_subclass=predicate_resume["candidate_subclass"]
-    test_cands_query  = session.query(candidate_subclass).filter(candidate_subclass.split==1)
+
+    test_cands_query  = session.query(candidate_subclass).filter(candidate_subclass.split == 2).order_by(candidate_subclass.id)
+    L_gold_test = load_gold_labels(session, annotator_name='gold', split=2)
+
     if limit is not None:
         test_cands_query.limit(limit)
     test_cands=test_cands_query.all()
@@ -28,12 +33,10 @@ def test_model(predicate_resume, model_name=None, limit=None):
     if model_name is None:
         model_name="D"+predicate_resume["predicate_name"]+"Latest"
     lstm.load(model_name)
-    predictions=lstm.predictions(test_cands)
-    marginals=lstm.marginals(test_cands)
-    i=0
-    for candidate in test_cands:
-        print(candidate.get_parent().text+" || "+str(marginals[i])+" || "+str(predictions[i]))
-        i=i+1
+    p, r, f1 = lstm.score(test_cands, L_gold_test)
+    print("Prec: {0:.3f}, Recall: {1:.3f}, F1 Score: {2:.3f}".format(p, r, f1))
+    tp, fp, tn, fn = lstm.error_analysis(session, test_cands, L_gold_test)
+    lstm.save_marginals(session, test_cands)
 
 
 def before_test(predicate_resume,test_file_path):

@@ -10,7 +10,8 @@ from infer_predicate_types import infer_and_save_predicate_candidates_types
 from download_predicate_candidates_samples import get_predicate_samples_from_KB
 from candidate_extraction import extract_binary_candidates
 from labelling import predicate_candidate_labelling
-from train_model import train_model
+from train_gen_model import train_gen_model
+from train_disc_model import train_disc_model
 from test_model import test_model
 
 logging.basicConfig(filename='sentimantic.log',level=logging.INFO, format='%(asctime)s %(message)s')
@@ -22,7 +23,8 @@ is_to_infer_candidate_types=False
 is_to_download_samples_from_kb=False
 is_to_extract_candidates=False
 is_to_label=False
-is_to_train_classifier=False
+is_to_train_gen_classifier=False
+is_to_train_disc_classifier=False
 is_to_test_classifier=False
 i=0
 for arg in sys.argv:
@@ -36,8 +38,10 @@ for arg in sys.argv:
         is_to_extract_candidates=True
     elif arg.strip()=='label':
         is_to_label=True
-    elif arg.strip()=='train':
-        is_to_train_classifier=True
+    elif arg.strip()=='train_gen':
+        is_to_train_gen_classifier=True
+    elif arg.strip()=='train_disc':
+        is_to_train_disc_classifier=True
     elif arg.strip()=='test':
         is_to_test_classifier=True
     elif arg.strip()=='parallelism':
@@ -77,8 +81,10 @@ def start_predicate_domain_range_pipeline(predicate_resume):
     if is_to_label:
         predicate_candidate_labelling(predicate_resume, parallelism=parallelism,   test=False)
     #train model
-    if is_to_train_classifier:
-        train_model(predicate_resume, parallelism=parallelism)
+    if is_to_train_gen_classifier:
+        train_gen_model(predicate_resume, parallelism=parallelism)
+    if is_to_train_disc_classifier:
+        train_disc_model(predicate_resume, parallelism=parallelism)
     if is_to_test_classifier:
         test_model(predicate_resume)
 
