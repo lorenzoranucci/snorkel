@@ -106,7 +106,7 @@ class BratAnnotator(object):
 
         for doc in documents:
             text = doc_to_text(doc)
-            outfpath = "{}/{}".format(collection_path, doc.name)
+            outfpath = "{}/{}".format(collection_path, doc.name.replace(" ","_"))
             with codecs.open(outfpath + ".txt","w", self.encoding, errors=errors) as fp:
                 fp.write(text)
             with codecs.open(outfpath + ".ann","w", self.encoding, errors=errors) as fp:
