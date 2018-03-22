@@ -27,6 +27,7 @@ def predicate_candidate_labelling(predicate_resume,  parallelism=8,  test=False,
 
         cids_query=session.query(candidate_subclass.id).filter(candidate_subclass.split == 0)
         #skip cands already extracted
+        # TODO use simple max
         alreadyExistsGroup=session.query(LabelKey).filter(LabelKey.group==key_group).count()>0
         if alreadyExistsGroup:
             subquery=session.query(candidate_subclass.id).\
@@ -105,6 +106,23 @@ def get_labelling_functions(predicate_resume):
         except Exception as e:
             print(e)
             print("Not found candidate"+str(c.id))
+
+    def LF_distant_supervision2(c):
+        try:
+            subject_span=getattr(c,"subject").get_span()
+            object_span=getattr(c,"object").get_span()
+            # if (subject_span, object_span)in known_samples:
+            if is_in_known_samples2(predicate_resume,sentimantic_session,subject_span,object_span):
+                return 1
+            subject_span=getattr(c,"subject")
+            object_span=getattr(c,"object")
+            if is_in_known_samples2(predicate_resume,sentimantic_session,subject_span,object_span):
+                return 1
+
+            return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+        except Exception as e:
+            print(e)
+            print("Not found candidate"+str(c.id))
         #return -1 if np.random.rand() < 0.30 else 0
     # def LF_distant_supervision_neg(c):
     #     subject_span=getattr(c,"subject").get_span()
@@ -158,26 +176,6 @@ def get_nouns(span, type):
         return span.get_span()
     return get_dbpedia_noun(ngrams,type)
 
-
-def get_clean_noun(span):
-    start_word=span.get_word_start()
-    end_word=span.get_word_end()
-    sentence_pos_tags=span.sentence.pos_tags
-    sentence_words=span.sentence.words
-    result=[]
-    for i in range(start_word,end_word+1):
-        if 'NN' in sentence_pos_tags[i]:
-            result.append(sentence_words[i])
-    return ' '.join(result)
-
-def get_ngrams(string_):
-    string_list=string_.split(" ")
-    result=[]
-    for i in range(len(string_list),0,-1):
-        for j in ngrams(string_list,i):
-            result.append(j)
-    return result
-
 def get_dbpedia_noun(ngrams, type):
     result=None
     for ngram in ngrams:
@@ -203,14 +201,7 @@ def get_dbpedia_noun(ngrams, type):
                 if current_refcount < (max_refcount/10):
                     break
                 label =result_element.getElementsByTagName('Label')[0].firstChild.nodeValue
-                # jaccard, jaro_winkler, hamming, token_sort_ratio
-                jaccardD=jaccard(label,noun)
-                jaro=jaro_winkler(label,noun)
-                lev=levenshtein(label,noun)
-                hammingD=hamming(label,noun)
-                tsr=token_sort_ratio(label,noun)
-
-                if lev > 0.36:
+                if are_nouns_similar(label,noun):
                     if result==None:
                         result=[]
                     # try:
@@ -225,11 +216,74 @@ def get_dbpedia_noun(ngrams, type):
         result=[]
     return result
 
+def get_clean_noun(span):
+    start_word=span.get_word_start()
+    end_word=span.get_word_end()
+    sentence_pos_tags=span.sentence.pos_tags
+    sentence_words=span.sentence.words
+    result=[]
+    for i in range(start_word,end_word+1):
+        if 'NN' in sentence_pos_tags[i]:
+            result.append(sentence_words[i])
+    return ' '.join(result)
+
+def get_ngrams(string_):
+    string_list=string_.split(" ")
+    result=[]
+    for i in range(len(string_list),0,-1):
+        for j in ngrams(string_list,i):
+            result.append(j)
+    return result
+
+
+
 def is_in_known_samples(predicate_resume,session,subject,object):
     sample_class=predicate_resume["sample_class"]
     return session.query(sample_class). \
         filter(sample_class.subject==subject). \
         filter(sample_class.object==object).\
                count()>0
-        # filter(sample_class.subject.like("%"+subject+"%")).\
-               # filter(sample_class.object.like("%"+object+"%")).\
+
+def is_in_known_samples2(predicate_resume,session,subject_span, object_span):
+    subject_span=get_clean_noun(subject_span)
+    object_span=get_clean_noun(object_span)
+    subject_ngrams=get_ngrams(subject_span)
+    if len(subject_ngrams)>0:
+        for subject_ngram in subject_ngrams:
+            good_samples_by_subject=get_like_known_sample_by_subject(predicate_resume,session,subject_ngram[0])
+            for good_sample in good_samples_by_subject:
+                if are_nouns_similar(subject_span,good_sample.subject) \
+                and are_nouns_similar(object_span,good_sample.object):
+                    return True
+    object_ngrams=get_ngrams(object_span)
+    if len(object_ngrams)>0:
+        for object_ngram in object_ngrams:
+            good_samples_by_object=get_like_known_sample_by_object(predicate_resume,session,object_ngram[0])
+            for good_sample in good_samples_by_object:
+                if are_nouns_similar(subject_span,good_sample.subject) \
+                and are_nouns_similar(object_span,good_sample.object):
+                    return True
+    return False
+
+def are_nouns_similar(noun1, noun2):
+    # jaccard, jaro_winkler, hamming, token_sort_ratio
+    jaccardD=jaccard(noun1, noun2)
+    jaro=jaro_winkler(noun1, noun2)
+    lev=levenshtein(noun1, noun2)
+    hammingD=hamming(noun1, noun2)
+    tsr=token_sort_ratio(noun1, noun2)
+    if lev > 0.36:
+        return True
+
+
+def get_like_known_sample_by_subject(predicate_resume,session,noun):
+    sample_class=predicate_resume["sample_class"]
+    return session.query(sample_class). \
+               filter(sample_class.subject.like("%"+noun+"%")). \
+               all()
+
+def get_like_known_sample_by_object(predicate_resume,session,noun):
+    sample_class=predicate_resume["sample_class"]
+    return session.query(sample_class). \
+        filter(sample_class.object.like("%"+noun+"%")). \
+        all()
