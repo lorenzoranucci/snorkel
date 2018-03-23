@@ -41,16 +41,9 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,  spl
         set_name=""
         if split == None:
             set_name="train"
-            if i % 10 == 2:
-                set_name="dev"
-                split2=1
-            elif i % 10 == 3:
-                set_name="test"
-                split2=2
-            else:
-                set_name="train"
-                split2=0
+            split2=0
         else:
+            set_name=str(split)
             split2=split
 
         logging.debug('\tQuering sentences from %s to %s, in set \'%s\'', (page*(i-1))+1, page*i, set_name)
