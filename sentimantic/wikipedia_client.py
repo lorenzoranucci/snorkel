@@ -12,10 +12,14 @@ def download_articles(page_titles_list, dump_file_path, lang="en"):
     root=ET.Element("dump")
     wikipedia.set_lang(lang)
     for title in page_titles_list:
-        doc = ET.SubElement(root, "document")
-        page=wikipedia.page(title)
-        id= ET.SubElement(doc, "id").text=page.pageid
-        text= ET.SubElement(doc, "text").text=page.content
+        try:
+            page=wikipedia.page(title)
+            doc = ET.SubElement(root, "document")
+            ET.SubElement(doc, "id").text=page.pageid
+            ET.SubElement(doc, "text").text=page.content
+        except:
+            print(title+" page not saved")
+            logging.info(title+" page not saved")
     tree = ET.ElementTree(root)
     tree.write(file)
     logging.info("Articles download end")
