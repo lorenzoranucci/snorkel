@@ -3,23 +3,25 @@ import os.path
 import xml.etree.cElementTree as ET
 import logging
 
-def download_articles(page_titles_list, dump_file_path, lang="en"):
+def download_articles(page_titles_list, dump_folder_path, lang="en"):
     logging.info("Articles download start")
-    if os.path.isfile(dump_file_path):
-        logging.error("Dump file already exists")
-        raise Exception
-    file = open(dump_file_path, 'a+')
-    root=ET.Element("dump")
     wikipedia.set_lang(lang)
     for title in page_titles_list:
+        dump_file_path=dump_folder_path+title.replace(" ","_")+".xml"
+        if os.path.isfile(dump_file_path):
+            logging.error(title+": Dump file already exists")
+            continue
+        file = open(dump_file_path, 'a+')
         try:
             page=wikipedia.page(title)
-            doc = ET.SubElement(root, "document")
-            ET.SubElement(doc, "id").text=page.pageid
-            ET.SubElement(doc, "text").text=page.content
+            root=ET.Element("documents")
+            doc = ET.SubElement(root, "doc")
+            doc.set('title', page.title)
+            doc.text=page.content
+            tree = ET.ElementTree(root)
+            tree.write(file)
         except:
             print(title+" page not saved")
             logging.info(title+" page not saved")
-    tree = ET.ElementTree(root)
-    tree.write(file)
+
     logging.info("Articles download end")

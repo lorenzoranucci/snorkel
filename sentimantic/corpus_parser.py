@@ -1,5 +1,4 @@
-import os
-from os import listdir
+from os import listdir, mkdir
 from os.path import isfile, join
 from snorkel import SnorkelSession
 from snorkel.parser import XMLMultiDocPreprocessor
@@ -7,6 +6,7 @@ from snorkel.parser.spacy_parser import Spacy
 from snorkel.parser import CorpusParser
 from snorkel.models import Document, Sentence
 import logging
+import shutil
 
 def parse_wikipedia_dump(
     dumps_folder_path='../../data/wikipedia/dump/en/extracted_text/AA/', clear=False, parallelism=8):
@@ -31,8 +31,13 @@ def parse_wikipedia_dump(
             )
             if i > 0:
                 clear = False
-            corpus_parser.apply(doc_preprocessor, clear=clear, parallelism=parallelism)
+            try:
+                corpus_parser.apply(doc_preprocessor, clear=clear, parallelism=parallelism)
+            except:
+                print("Error parsing file "+file)
+                logging.error("Error parsing file "+file)
             i=i+1
     logging.debug("Documents: %d", session.query(Document).count())
     logging.debug("Sentences: %d", session.query(Sentence).count())
     logging.info("Corpus parsing end")
+

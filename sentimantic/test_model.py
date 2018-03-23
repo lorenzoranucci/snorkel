@@ -9,7 +9,7 @@ from snorkel.annotations import load_gold_labels
 from sqlalchemy import or_
 
 def test_model(predicate_resume, model_name=None, limit=None):
-    logging
+    # Todo controlla che minchia hai committato iersera
 
     session = SnorkelSession()
     candidate_subclass=predicate_resume["candidate_subclass"]
@@ -39,7 +39,7 @@ def test_model(predicate_resume, model_name=None, limit=None):
     lstm.save_marginals(session, test_cands)
 
 
-def before_test(predicate_resume,test_file_path):
+def before_test(predicate_resume,test_file_path=".data/test.xml"):
     session = SnorkelSession()
     count_sentences=session.query(Sentence).count()
     parse_wikipedia_dump(test_file_path)

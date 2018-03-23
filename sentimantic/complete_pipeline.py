@@ -4,7 +4,7 @@ import os
 os.environ['SNORKELDB'] = 'postgresql://sentimantic:sentimantic@postgres:5432/sentimantic'
 import logging
 from models import create_database
-from predicate_utils import save_predicate, get_predicate_resume, get_predicates_from_config
+from predicate_utils import save_predicate, get_predicate_resume, get_predicates_configs
 from corpus_parser import parse_wikipedia_dump
 from infer_predicate_types import infer_and_save_predicate_candidates_types
 from download_predicate_candidates_samples import get_predicate_samples_from_KB
@@ -13,6 +13,7 @@ from labelling import predicate_candidate_labelling
 from train_gen_model import train_gen_model
 from train_disc_model import train_disc_model
 from test_model import test_model
+from setup_dev_test import setup_dev, setup_test
 
 logging.basicConfig(filename='sentimantic.log',level=logging.INFO, format='%(asctime)s %(message)s')
 dump_file_dir="../../data/wikipedia/dump/en/extracted_text/AA/"
@@ -26,6 +27,7 @@ is_to_label=False
 is_to_train_gen_classifier=False
 is_to_train_disc_classifier=False
 is_to_test_classifier=False
+is_to_setup=False
 i=0
 for arg in sys.argv:
     if arg.strip()=='parse':
@@ -36,6 +38,8 @@ for arg in sys.argv:
         is_to_download_samples_from_kb=True
     elif arg.strip()=='extract':
         is_to_extract_candidates=True
+    elif arg.strip()=='setup':
+        is_to_setup=True
     elif arg.strip()=='label':
         is_to_label=True
     elif arg.strip()=='train_gen':
@@ -55,18 +59,18 @@ def start_pipeline():
     logging.info("Pipeline start")
     if is_to_parse_wikipedia_dump:
         parse_wikipedia_dump(dump_file_dir, parallelism=parallelism)
-    predicate_URI_list=get_predicates_from_config()
-    for predicate_URI in predicate_URI_list:
-        start_predicate_pipeline(predicate_URI)
+    predicate_configs_list=get_predicates_configs()
+    for predicate_configs in predicate_configs_list:
+        start_predicate_pipeline(predicate_configs)
 
-def start_predicate_pipeline(predicate_URI):
+def start_predicate_pipeline(predicate_configs):
     #persist predicate
-    save_predicate(predicate_URI)
+    save_predicate(predicate_configs['uri'])
     #retrieve predicate domain and range
     if is_to_infer_candidate_types:
-        infer_and_save_predicate_candidates_types(predicate_URI)
+        infer_and_save_predicate_candidates_types(predicate_configs['uri'])
     #get predicate with related objects from database
-    predicate_resume_list=get_predicate_resume(predicate_URI)
+    predicate_resume_list=get_predicate_resume(predicate_configs)
     for predicate_resume in predicate_resume_list:
         start_predicate_domain_range_pipeline(predicate_resume)
 
@@ -77,6 +81,9 @@ def start_predicate_domain_range_pipeline(predicate_resume):
     #candidates extraction
     if is_to_extract_candidates:
         extract_binary_candidates(predicate_resume, parallelism=parallelism)
+    if is_to_setup:
+        dev_collection_name=setup_dev(predicate_resume)
+        test_collection_name=setup_test(predicate_resume)
     #candidates labeling with distant supervision
     if is_to_label:
         predicate_candidate_labelling(predicate_resume, parallelism=parallelism,   test=False)

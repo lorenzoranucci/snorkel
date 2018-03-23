@@ -1,0 +1,27 @@
+predicates:
+  - name: 'birthPlace'
+    uri: 'http://dbpedia.org/ontology/birthPlace'
+    words:
+      - 'born'
+      - 'grown'
+    dev_pages:
+      - 'Elon Musk'
+      - 'Linus Torvalds'
+    test_pages:
+      - 'Elon Musk'
+      - 'Linus Torvalds'
+      - 'Del Piero'
+      - 'Zinédine_Zidane'
+      - 'Francesco Totti'
+  - name: 'deathPlace'
+    uri: 'http://dbpedia.org/ontology/deathPlace'
+    words:
+      - 'died'
+      - 'death'
+    dev_pages:
+      - 'Elon Musk'
+      - 'Linus Torvalds'
+    test_pages:
+      - 'Del Piero'
+      - 'Zidane'
+      - 'Totti'

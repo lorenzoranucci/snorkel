@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from models import get_sentimantic_engine,get_sentimantic_session, Predicate, BinaryCandidate, PredicateCandidateAssoc, get_predicate_candidate_samples_table
 from snorkel.models import candidate_subclass
 from sqlalchemy.sql import text
+import yaml
 
 
 def save_predicate(predicate_URI):
@@ -24,8 +25,8 @@ def save_predicate(predicate_URI):
     logging.info('Predicate "%s" saved', predicate_URI)
 
 
-def get_predicate_resume(predicate_URI):
-
+def get_predicate_resume(predicate_configs):
+    predicate_URI=predicate_configs['uri']
     result=[]
     SentimanticSession = get_sentimantic_session()
     sentimantic_session = SentimanticSession()
@@ -76,8 +77,8 @@ def get_predicate_resume(predicate_URI):
             object_type=sentimantic_session.query(TypeNamedEntityAssoc) \
                 .filter(TypeNamedEntityAssoc.namedentity == object_ne).first().type
 
-            predicate_name = get_predicate_name(predicate_URI)
-            words=get_predicate_words_from_config(predicate_URI)
+            predicate_name = predicate_configs['name']
+            words=predicate_configs["words"]
             sample_class=get_predicate_candidate_samples_table("Sample"+predicate_name.title()+subject_ne.title()+object_ne.title())
             result.append({"predicate_name": predicate_name,
                             "predicate_URI": predicate_URI,
@@ -85,17 +86,12 @@ def get_predicate_resume(predicate_URI):
                             "subject_ne":subject_ne, "object_ne":object_ne,
                             "subject_type":subject_type, "object_type":object_type,
                             "label_group":pca.id, "sample_class": sample_class,
-                            "words":words
+                            "words":words, "configs":predicate_configs
                            })
     return result
 
 
 
-def get_predicate_name(predicate_URI):
-    predicate_split = predicate_URI.split('/')
-    predicate_split_len = len(predicate_split)
-    predicate_name = predicate_split[predicate_split_len - 1].strip()
-    return predicate_name
 
 def count_predicate_samples(predicate_URI, kb_SPARQL_endpoint="https://dbpedia.org/sparql",
                             defaultGraph="http://dbpedia.org"):
@@ -115,35 +111,6 @@ def count_predicate_samples(predicate_URI, kb_SPARQL_endpoint="https://dbpedia.o
 
 
 
-
-
-
-
-def get_predicates_from_config(path="./predicates_list.config"):
-    result=[]
-    with open(path) as f:
-        content = f.readlines()
-        for x in content:
-            x=x.strip().strip('\n')
-            if '+' in x[0]:
-                continue
-            result.append(x)
-    return result
-
-
-def get_predicate_words_from_config(predicate_URI, path="./predicates_list.config"):
-    result = []
-    with open(path) as f:
-        content = f.readlines()
-        read_words=False
-        for x in content:
-            x=x.strip().strip('\n')
-            if read_words:
-                if '+' in x[0]:
-                    result.append(x[1:])
-                else:
-                    break
-            else:
-                if x == predicate_URI:
-                    read_words = True
-    return result
+def get_predicates_configs(path="./config.yaml"):
+    stream = open(path, "r")
+    return  yaml.load(stream)["predicates"]
