@@ -10,6 +10,9 @@ import logging
 def create_collection(predicate_resume, split):
     session = SnorkelSession()
     CandidateSubclass=predicate_resume["candidate_subclass"]
+    # if split==0:
+    #     name="/train"
+    # el
     if split==1:
         name="/dev"
     elif split==2:
@@ -23,6 +26,6 @@ def create_collection(predicate_resume, split):
     brat = BratAnnotator(session, candidate_subclass, encoding='utf-8')
     predicate_name = predicate_resume["predicate_name"]
     date_time=strftime("%d-%m-%Y_%H_%M_%S", gmtime())
-    collection_name=predicate_name+candidate_subclass.__name__+name+date_time
+    collection_name=predicate_name+candidate_subclass.__name__+name#+date_time
     brat.init_collection(collection_name, cid_query=cids_query)
     return collection_name
