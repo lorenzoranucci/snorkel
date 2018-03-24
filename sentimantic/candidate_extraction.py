@@ -8,7 +8,7 @@ from snorkel.models import Sentence
 from sqlalchemy import delete
 
 
-def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,  split=None, documents_titles=None):
+def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,  split=None, documents_titles=None, limit=None):
     #create span and candidates
     logging.info("Starting candidates extraction ")
     subject_ne=predicate_resume['subject_ne']
@@ -26,17 +26,16 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,  spl
                                         symmetric_relations=True)
 
     #skip sentences already extracted
-    sents_query= session.query(Sentence)
+    sents_query_id= session.query(Sentence.id)
     candidates_count = session.query(CandidateSubclass).count()
     if documents_titles==None and candidates_count>1 and clear==False:
         #case with already extracted cands
         subquery=session.query(Sentence.id).join(Span, Span.sentence_id==Sentence.id).join(CandidateSubclass,CandidateSubclass.subject_id==Span.id)
-        sents_query= session.query(Sentence).filter(~Sentence.id.in_(subquery))
+        sents_query_id= session.query(Sentence.id).filter(~Sentence.id.in_(subquery))
     elif documents_titles != None:
         #extract only sentences of documents listed
         subquery=session.query(Document.id).filter(Document.name.in_(documents_titles))
-        sents_query=session.query(Sentence).filter(Sentence.document_id.in_(subquery))
-
+        sents_query_id=session.query(Sentence.id).filter(Sentence.document_id.in_(subquery))
         #remove candidates already extracted for this documents
         candidates_to_delete=session.query(CandidateSubclass). \
             join(Span,CandidateSubclass.subject_id==Span.id). \
@@ -47,6 +46,11 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,  spl
             session.delete(candidate_to_delete)
         session.commit()
 
+    if limit is not None:
+        sents_query_id=sents_query_id.limit(limit)
+
+
+    sents_query=session.query(Sentence).filter(Sentence.id.in_(sents_query_id))
 
 
     sents_count=sents_query.count()
@@ -66,7 +70,8 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,  spl
             split2=split
 
         logging.debug('\tQuering sentences from %s to %s, in set \'%s\'', (page*(i-1))+1, page*i, set_name)
-        sents=sents_query.order_by(Sentence.id).slice((page*(i-1))+1, page*i).all()
+        #sents=sents_query.slice((page*(i-1)), page*i).all()
+        sents=sents_query.order_by(Sentence.id).slice((page*(i-1)), page*i).all()
         if sents == None or len(sents) < 1 :
             break
         cand_extractor.apply(sents, split=split2, clear=clear, progress_bar=False, parallelism=parallelism)

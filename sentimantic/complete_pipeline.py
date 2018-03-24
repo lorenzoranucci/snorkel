@@ -19,6 +19,7 @@ logging.basicConfig(filename='sentimantic.log',level=logging.INFO, format='%(asc
 dump_file_dir="../../data/wikipedia/dump/en/extracted_text/AA/"
 dump_file_name="wiki_00.xml"
 parallelism=32
+limit=None
 is_to_parse_wikipedia_dump=False
 is_to_infer_candidate_types=False
 is_to_download_samples_from_kb=False
@@ -50,6 +51,8 @@ for arg in sys.argv:
         is_to_test_classifier=True
     elif arg.strip()=='parallelism':
         parallelism=sys.argv[i+1]
+    elif arg.strip()=='limit':
+        limit=int(sys.argv[i+1])
     i=i+1
 
 
@@ -80,7 +83,7 @@ def start_predicate_domain_range_pipeline(predicate_resume):
         get_predicate_samples_from_KB(predicate_resume, parallelism=parallelism)
     #candidates extraction
     if is_to_extract_candidates:
-        extract_binary_candidates(predicate_resume, parallelism=parallelism)
+        extract_binary_candidates(predicate_resume, parallelism=parallelism, limit=limit)
     if is_to_setup:
         dev_collection_name=setup_dev(predicate_resume)
         test_collection_name=setup_test(predicate_resume)
