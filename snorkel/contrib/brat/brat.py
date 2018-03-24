@@ -82,16 +82,16 @@ class BratAnnotator(object):
         assert split != None or cid_query != None
 
         collection_path = "{}/{}".format(self.data_root, annotation_dir)
-        if os.path.exists(collection_path) and not overwrite:
-            msg = "Error! Collection at '{}' already exists. ".format(annotation_dir)
-            msg += "Please set overwrite=True to erase all existing annotations.\n"
-            sys.stderr.write(msg)
-            return
-
-        # remove existing annotations
-        if os.path.exists(collection_path):
-            shutil.rmtree(collection_path, ignore_errors=True)
-            print("Removed existing collection at '{}'".format(annotation_dir))
+        # if os.path.exists(collection_path) and not overwrite:
+        #     msg = "Error! Collection at '{}' already exists. ".format(annotation_dir)
+        #     msg += "Please set overwrite=True to erase all existing annotations.\n"
+        #     sys.stderr.write(msg)
+        #     return
+        #
+        # # remove existing annotations
+        # if os.path.exists(collection_path):
+        #     shutil.rmtree(collection_path, ignore_errors=True)
+        #     print("Removed existing collection at '{}'".format(annotation_dir))
 
         # create subquery based on candidate split
         if split != None:
@@ -102,11 +102,14 @@ class BratAnnotator(object):
         documents = self.session.query(Document).filter(Document.id.in_(doc_ids)).all()
 
         # create collection on disk
-        os.makedirs(collection_path)
+        if not os.path.exists(collection_path):
+            os.makedirs(collection_path)
 
         for doc in documents:
             text = doc_to_text(doc)
             outfpath = "{}/{}".format(collection_path, doc.name.replace(" ","_"))
+            if os.path.exists(outfpath+ ".txt"):
+                continue
             with codecs.open(outfpath + ".txt","w", self.encoding, errors=errors) as fp:
                 fp.write(text)
             with codecs.open(outfpath + ".ann","w", self.encoding, errors=errors) as fp:
