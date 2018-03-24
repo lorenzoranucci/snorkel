@@ -30,11 +30,11 @@ def setup(predicate_resume,  dump_folder_path, lang, split, parallelism=1):
         print("Dir not created")
 
     logging.info("Downloading articles")
-    download_articles(pages_titles,dump_folder_path,lang=lang)
+    extracted_pages_titles=download_articles(pages_titles,dump_folder_path,lang=lang)
     logging.info("Parsing")
     parse_wikipedia_dump(dump_folder_path,parallelism=parallelism)
     logging.info("Extracting")
-    extract_binary_candidates(predicate_resume, parallelism=parallelism,split=split,documents_titles=pages_titles)
+    extract_binary_candidates(predicate_resume, parallelism=parallelism,split=split,documents_titles=extracted_pages_titles)
     collection_name=create_collection(predicate_resume,split)
 
     logging.info("Deleting dump files")
