@@ -1,5 +1,8 @@
 from os import listdir, mkdir
 from os.path import isfile, join
+
+from sqlalchemy.exc import IntegrityError
+
 from snorkel import SnorkelSession
 from snorkel.parser import XMLMultiDocPreprocessor
 from snorkel.parser.spacy_parser import Spacy
@@ -33,9 +36,9 @@ def parse_wikipedia_dump(
                 clear = False
             try:
                 corpus_parser.apply(doc_preprocessor, clear=clear, parallelism=parallelism)
-            except:
-                print("Error parsing file "+file)
-                logging.error("Error parsing file "+file)
+            except IntegrityError as e:
+                print("Already parsed "+file)
+                logging.error("Already parsed "+file)
             i=i+1
     logging.debug("Documents: %d", session.query(Document).count())
     logging.debug("Sentences: %d", session.query(Sentence).count())
