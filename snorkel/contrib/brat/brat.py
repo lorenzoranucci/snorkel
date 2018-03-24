@@ -215,7 +215,7 @@ class BratAnnotator(object):
         annotations = self.standoff_parser.load_annotations(fpath)
 
         # load Document objects from session
-        doc_names = [doc_name for doc_name in annotations if annotations[doc_name]]
+        doc_names = [doc_name.replace("_"," ") for doc_name in annotations if annotations[doc_name]]
         documents = session.query(Document).filter(Document.name.in_(doc_names)).all()
         documents = {doc.name:doc for doc in documents}
 
@@ -228,7 +228,7 @@ class BratAnnotator(object):
         # build BRAT span/relation objects
         brat_stable_ids = []
         for doc_name in documents:
-            spans, relations = self._create_relations(documents[doc_name], annotations[doc_name])
+            spans, relations = self._create_relations(documents[doc_name], annotations[doc_name.replace(" ","_")])
             for key in relations:
                 brat_stable_ids.append(tuple([r.get_stable_id() for r in relations[key]]))
 
