@@ -5,23 +5,21 @@ predicates:
       - 'born'
       - 'grown'
     dev_pages:
+      - 'Zinedine Zidane'
       - 'Elon Musk'
       - 'Linus Torvalds'
     test_pages:
-      - 'Elon Musk'
-      - 'Linus Torvalds'
-      - 'Del Piero'
-      - 'Zinédine_Zidane'
+      - 'Alessandro Del Piero'
       - 'Francesco Totti'
-  - name: 'deathPlace'
-    uri: 'http://dbpedia.org/ontology/deathPlace'
-    words:
-      - 'died'
-      - 'death'
-    dev_pages:
-      - 'Elon Musk'
-      - 'Linus Torvalds'
-    test_pages:
-      - 'Del Piero'
-      - 'Zidane'
-      - 'Totti'
+#  - name: 'deathPlace'
+#    uri: 'http://dbpedia.org/ontology/deathPlace'
+#    words:
+#      - 'died'
+#      - 'death'
+#    dev_pages:
+#      - 'Elon Musk'
+#      - 'Linus Torvalds'
+#    test_pages:
+#      - 'Del Piero'
+#      - 'Zidane'
+#      - 'Totti'
