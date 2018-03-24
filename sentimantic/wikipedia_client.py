@@ -6,6 +6,7 @@ import logging
 def download_articles(page_titles_list, dump_folder_path, lang="en"):
     logging.info("Articles download start")
     wikipedia.set_lang(lang)
+    extracted_pages_titles=[]
     for title in page_titles_list:
         filename = title.encode('ascii',errors='ignore').replace(" ","_")+".xml"
         dump_file_path=dump_folder_path+filename
@@ -21,8 +22,10 @@ def download_articles(page_titles_list, dump_folder_path, lang="en"):
             doc.text=page.content
             tree = ET.ElementTree(root)
             tree.write(file)
+            extracted_pages_titles.append(page.title)
         except:
             print(title+" page not saved")
             logging.info(title+" page not saved")
 
     logging.info("Articles download end")
+    return extracted_pages_titles
