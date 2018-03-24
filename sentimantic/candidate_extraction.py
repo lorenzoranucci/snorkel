@@ -1,10 +1,11 @@
 import logging
 from snorkel import SnorkelSession
-from snorkel.models import Span, Document
+from snorkel.models import Span, Document, Candidate
 from snorkel.candidates import Ngrams, CandidateExtractor
 from snorkel.matchers import PersonMatcher, DateMatcher,  OrganizationMatcher
 from matchers import GPEMatcher, EventMatcher, WorkOfArtMatcher, LanguageMatcher
 from snorkel.models import Sentence
+from sqlalchemy import delete
 
 
 def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,  split=None, documents_titles=None):
@@ -32,9 +33,22 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,  spl
         subquery=session.query(Sentence.id).join(Span, Span.sentence_id==Sentence.id).join(CandidateSubclass,CandidateSubclass.subject_id==Span.id)
         sents_query= session.query(Sentence).filter(~Sentence.id.in_(subquery))
     elif documents_titles != None:
-        #Todo remove candidates already extracted for this documents
+        #extract only sentences of documents listed
         subquery=session.query(Document.id).filter(Document.name.in_(documents_titles))
         sents_query=session.query(Sentence).filter(Sentence.document_id.in_(subquery))
+
+        #remove candidates already extracted for this documents
+        candidates_to_delete=session.query(CandidateSubclass). \
+            join(Span,CandidateSubclass.subject_id==Span.id). \
+            join(Sentence, Span.sentence_id==Sentence.id). \
+            filter(Sentence.document_id.in_(subquery)).all()
+        #CandidateSubclass.delete().where(CandidateSubclass.id.in_(candidates_subquery))
+        for candidate_to_delete in candidates_to_delete:
+            session.delete(candidate_to_delete)
+        session.commit()
+
+
+
     sents_count=sents_query.count()
 
     if sents_count > 100000:
