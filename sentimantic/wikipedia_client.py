@@ -7,7 +7,8 @@ def download_articles(page_titles_list, dump_folder_path, lang="en"):
     logging.info("Articles download start")
     wikipedia.set_lang(lang)
     for title in page_titles_list:
-        dump_file_path=dump_folder_path+title.replace(" ","_")+".xml"
+        filename = title.encode('ascii',errors='ignore').replace(" ","_")+".xml"
+        dump_file_path=dump_folder_path+filename
         if os.path.isfile(dump_file_path):
             logging.error(title+": Dump file already exists")
             continue
