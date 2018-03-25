@@ -51,14 +51,16 @@ def score_gen_model(predicate_resume, session, gen_model_name=None, parallelism=
     train_marginals = gen_model.marginals(L_train)
 
 
-    dev_cids_query=get_dev_cids_with_span(predicate_resume,session)
-    L_gold_dev = get_gold_dev_matrix(predicate_resume,session)
-    L_dev = labeler.apply_existing(parallelism=parallelism, cids_query=dev_cids_query,
+    test_cids_query=get_test_cids_with_span(predicate_resume,session)
+    L_gold_test = get_gold_test_matrix(predicate_resume,session)
+    L_test = labeler.apply_existing(parallelism=parallelism, cids_query=test_cids_query,
                                    key_group=key_group, clear=False)
 
-    logging.info("\n"+gen_model.error_analysis(session, L_dev, L_gold_dev))
-    logging.info("\n"+L_dev.lf_stats(session, L_gold_dev, gen_model.learned_lf_stats()['Accuracy']))
-    logging.info("\n"+gen_model.weights.lf_accuracy)
+    tp, fp, tn, fn = gen_model.error_analysis(session, L_test, L_gold_test)
+    logging.info("TP: {}, FP: {}, TN: {}, FN: {}".format(str(len(tp)),
+                                                         str(len(fp)),
+                                                         str(len(tn)),
+                                                         str(len(fn))))
     logging.info("\n"+L_train.lf_stats(session))
     plt.hist(train_marginals, bins=20)
     plt.show()
