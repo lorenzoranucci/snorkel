@@ -20,6 +20,7 @@ dump_file_dir="../../data/wikipedia/dump/en/extracted_text/AA/"
 dump_file_name="wiki_00.xml"
 parallelism=32
 limit=None
+page_size=100000
 is_to_parse_wikipedia_dump=False
 is_to_infer_candidate_types=False
 is_to_download_samples_from_kb=False
@@ -53,6 +54,8 @@ for arg in sys.argv:
         parallelism=sys.argv[i+1]
     elif arg.strip()=='limit':
         limit=int(sys.argv[i+1])
+    elif arg.strip()=='page_size':
+        page_size=int(sys.argv[i+1])
     i=i+1
 
 
@@ -83,7 +86,7 @@ def start_predicate_domain_range_pipeline(predicate_resume):
         get_predicate_samples_from_KB(predicate_resume, parallelism=parallelism)
     #candidates extraction
     if is_to_extract_candidates:
-        extract_binary_candidates(predicate_resume, parallelism=parallelism, limit=limit)
+        extract_binary_candidates(predicate_resume, parallelism=parallelism, limit=limit, page_size=page_size)
     if is_to_setup:
         setup_dev(predicate_resume)
         setup_test(predicate_resume)

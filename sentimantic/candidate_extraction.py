@@ -6,7 +6,9 @@ from matchers import GPEMatcher, EventMatcher, WorkOfArtMatcher, LanguageMatcher
 from models import *
 
 
-def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,  split=None, documents_titles=None, limit=None):
+def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,
+                              split=None, documents_titles=None, limit=None,
+                              page_size=10000):
     #create span and candidates
     logging.info("Starting candidates extraction ")
     subject_ne=predicate_resume['subject_ne']
@@ -19,7 +21,10 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,  spl
     ngrams= Ngrams(n_max=10)
     subject_matcher = get_matcher(subject_ne)
     object_matcher = get_matcher(object_ne)
-    cand_extractor = CandidateExtractor(CandidateSubclass, [ngrams, ngrams], [subject_matcher,object_matcher],self_relations=True,
+    cand_extractor = CandidateExtractor(CandidateSubclass,
+                                        [ngrams, ngrams],
+                                        [subject_matcher,object_matcher],
+                                        self_relations=True,
                                         nested_relations=True,
                                         symmetric_relations=True)
 
@@ -45,8 +50,8 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,  spl
 
     sents_count=sents_query.count()
 
-    if sents_count > 100000:
-        page=10000
+    if sents_count > page_size:
+        page=page_size
     else:
         page=sents_count
     i=1
@@ -59,7 +64,7 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,  spl
             set_name=str(split)
             split2=split
 
-        logging.debug('\tQuering sentences from %s to %s, in set \'%s\'', (page*(i-1))+1, page*i, set_name)
+        logging.debug('\tQuering sentences from %s to %s, in set \'%s\'', (page*(i-1)), page*i, set_name)
         sents=sents_query.order_by(Sentence.id).slice((page*(i-1)), page*i).all()
         if sents == None or len(sents) < 1 :
             break
