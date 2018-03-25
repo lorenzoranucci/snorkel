@@ -284,3 +284,12 @@ def get_gold_test_matrix(predicate_resume, session):
                                    cids_query=test_cids_query,
                                    split=2)
     return L_gold_test
+
+def delete_orphan_spans():
+    stmt=text("""
+delete
+from context
+where context."type"='span' 
+and context.id not in(select span.id from span)
+""")
+    get_sentimantic_engine().execute(stmt)

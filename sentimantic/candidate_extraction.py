@@ -31,6 +31,7 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,
     #skip sentences already extracted
     sents_query_id = session.query(Sentence.id)
     candidates_count = session.query(CandidateSubclass).count()
+    delete_orphan_spans()
     if documents_titles==None and candidates_count>1 and clear==False:
         sents_query_id = get_sentences_ids_not_extracted(predicate_resume, session)
     elif documents_titles != None:
