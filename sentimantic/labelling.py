@@ -1,3 +1,4 @@
+from PyQt5 import QtCore, QtGui, QtWidgets
 import logging
 from xml.dom import minidom
 import time
