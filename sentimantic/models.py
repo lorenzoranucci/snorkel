@@ -5,6 +5,11 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 import re
 
+from snorkel.annotations import load_gold_labels
+from snorkel.contrib.brat import BratAnnotator
+from brat_collection_creator import get_collection_name
+from snorkel.models import Marginal, Span, Sentence, Document, LabelKey, Label
+
 SentimanticBase = declarative_base(name='SentimanticBase', cls=object)
 
 def get_sentimantic_engine():
@@ -159,3 +164,118 @@ def camel_to_under(name):
     """
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+
+def get_cands_to_delete_by_title(predicate_resume, session, documents_titles):
+    candidate_subclass=predicate_resume["candidate_subclass"]
+    #extract only sentences of documents listed
+    subquery=session.query(Document.id).filter(Document.name.in_(documents_titles))
+    #remove candidates already extracted for this documents
+    candidates_to_delete_query=session.query(candidate_subclass). \
+        join(Span,candidate_subclass.subject_id==Span.id). \
+        join(Sentence, Span.sentence_id==Sentence.id). \
+        filter(Sentence.document_id.in_(subquery))
+    return candidates_to_delete_query
+
+def get_sentences_ids_by_title(predicate_resume, session, documents_titles):
+    candidate_subclass=predicate_resume["candidate_subclass"]
+    subquery=session.query(Document.id).filter(Document.name.in_(documents_titles))
+    return session.query(Sentence.id).filter(Sentence.document_id.in_(subquery))
+
+
+def get_sentences_ids_not_extracted(predicate_resume, session):
+    candidate_subclass=predicate_resume["candidate_subclass"]
+    #case with already extracted cands
+    subquery=session.query(Sentence.id).\
+        join(Span, Span.sentence_id==Sentence.id).\
+        join(candidate_subclass, candidate_subclass.subject_id==Span.id)
+    sents_query_id= session.query(Sentence.id).filter(~Sentence.id.in_(subquery))
+    return sents_query_id
+
+
+def get_train_cids_not_labeled(predicate_resume,session):
+    # TODO use simple max
+    candidate_subclass=predicate_resume["candidate_subclass"]
+    key_group=predicate_resume["label_group"]
+    subquery=session.query(candidate_subclass.id). \
+        join(Label, Label.candidate_id==candidate_subclass.id). \
+        join(LabelKey,LabelKey.id==Label.key_id). \
+        filter(LabelKey.group==key_group)
+
+    cids_query= session.query(candidate_subclass.id). \
+        filter(~candidate_subclass.id.in_(subquery)). \
+        filter(candidate_subclass.split == 0)
+    return cids_query
+
+
+def get_train_cids_with_marginals_and_span(predicate_resume,session):
+    return get_cands_with_span(predicate_resume, session, 0, only_id=True, with_marginals=True)
+
+
+def get_train_cands_with_marginals_and_span(predicate_resume,session):
+    return get_cands_with_span(predicate_resume, session, 0, only_id=False, with_marginals=True)
+
+
+def get_train_cids_with_span(predicate_resume,session):
+    return get_cands_with_span(predicate_resume, session, 0, only_id=True, with_marginals=False)
+
+
+def get_train_cands_with_span(predicate_resume,session):
+    return get_cands_with_span(predicate_resume, session, 0, only_id=False, with_marginals=False)
+
+
+def get_dev_cands_with_span(predicate_resume,session):
+    return get_cands_with_span(predicate_resume, session, 1, only_id=False, with_marginals=False)
+
+
+def get_dev_cids_with_span(predicate_resume,session):
+    return get_cands_with_span(predicate_resume, session, 1, only_id=True, with_marginals=False)
+
+
+def get_test_cands_with_span(predicate_resume,session):
+    return get_cands_with_span(predicate_resume, session, 2, only_id=False, with_marginals=False)
+
+
+def get_test_cids_with_span(predicate_resume,session):
+    return get_cands_with_span(predicate_resume, session, 2, only_id=True, with_marginals=False)
+
+
+def get_cands_with_span(predicate_resume,session, split,only_id=False, with_marginals=True):
+    candidate_subclass=predicate_resume["candidate_subclass"]
+    subquery=session.query(Span.id)
+    if only_id:
+        query=session.query(candidate_subclass.id)
+    else:
+        query=session.query(candidate_subclass)
+    if with_marginals:
+        query=query. \
+            join(Marginal, Marginal.candidate_id==candidate_subclass.id)
+    query=query. \
+        filter(candidate_subclass.split == split). \
+        filter(candidate_subclass.subject_id.in_(subquery)). \
+        filter(candidate_subclass.object_id.in_(subquery))
+    return query
+
+
+def get_gold_dev_matrix(predicate_resume, session):
+    candidate_subclass=predicate_resume["candidate_subclass"]
+    brat = BratAnnotator(session, candidate_subclass, encoding='utf-8')
+    dev_cids_query = get_dev_cids_with_span(predicate_resume,session)
+    dev_cands = get_dev_cands_with_span(predicate_resume,session).all()
+    brat.import_gold_labels(session,get_collection_name(predicate_resume,1),dev_cands,annotator_name="brat")
+    L_gold_dev = load_gold_labels(session, annotator_name="brat",
+                                  cids_query=dev_cids_query,
+                                  split=1)
+    return L_gold_dev
+
+
+def get_gold_test_matrix(predicate_resume, session):
+    candidate_subclass=predicate_resume["candidate_subclass"]
+    brat = BratAnnotator(session, candidate_subclass, encoding='utf-8')
+    test_cids_query=get_test_cids_with_span(predicate_resume, session)
+    test_cands = get_test_cands_with_span(predicate_resume, session).all()
+    brat.import_gold_labels(session,get_collection_name(predicate_resume, 2),test_cands,annotator_name="brat")
+    L_gold_test = load_gold_labels(session, annotator_name="brat",
+                                   cids_query=test_cids_query,
+                                   split=2)
+    return L_gold_test
