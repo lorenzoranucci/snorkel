@@ -35,6 +35,8 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,
         sents_query_id = get_sentences_ids_not_extracted(predicate_resume, session)
     elif documents_titles != None:
         #delete candidates for test and dev
+        logging.info("Deleting candidates")
+        print("Deleting candidates")
         candidates_to_delete=get_cands_to_delete_by_title(predicate_resume,session,documents_titles).all()
         for candidate_to_delete in candidates_to_delete:
             session.delete(candidate_to_delete)
