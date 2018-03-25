@@ -85,11 +85,11 @@ def start_predicate_domain_range_pipeline(predicate_resume):
     if is_to_extract_candidates:
         extract_binary_candidates(predicate_resume, parallelism=parallelism, limit=limit)
     if is_to_setup:
-        dev_collection_name=setup_dev(predicate_resume)
-        test_collection_name=setup_test(predicate_resume)
+        setup_dev(predicate_resume)
+        setup_test(predicate_resume)
     #candidates labeling with distant supervision
     if is_to_label:
-        predicate_candidate_labelling(predicate_resume, parallelism=parallelism,   test=False)
+        predicate_candidate_labelling(predicate_resume, parallelism=parallelism)
     #train model
     if is_to_train_gen_classifier:
         train_gen_model(predicate_resume, parallelism=parallelism)
