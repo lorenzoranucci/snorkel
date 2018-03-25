@@ -41,7 +41,7 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,
         for candidate_to_delete in candidates_to_delete:
             session.delete(candidate_to_delete)
         session.commit()
-        sents_query_id=get_sentences_ids_by_title(predicate_resume,session,documents_titles)
+        sents_query_id=get_sentences_ids_by_title_with_span(predicate_resume,session,documents_titles)
 
     if limit is not None:
         sents_query_id=sents_query_id.limit(limit)
