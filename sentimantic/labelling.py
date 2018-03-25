@@ -1,9 +1,6 @@
 import logging
 from xml.dom import minidom
-
 import time
-
-from models import get_sentimantic_session
 from snorkel import SnorkelSession
 import requests
 from snorkel.annotations import LabelAnnotator
@@ -14,11 +11,12 @@ from snorkel.lf_helpers import (
     get_left_tokens, get_right_tokens, get_between_tokens,
     get_text_between, get_tagged_text,
 )
+from models import *
 
-from snorkel.models import LabelKey, Candidate, Label
+from snorkel.models import LabelKey
 
 
-def predicate_candidate_labelling(predicate_resume,  parallelism=8,  test=False, limit=None, replace_key_set=False):
+def predicate_candidate_labelling(predicate_resume,  parallelism=8,  limit=None, replace_key_set=False):
     logging.info("Starting labeling ")
     session = SnorkelSession()
     try:
@@ -26,16 +24,11 @@ def predicate_candidate_labelling(predicate_resume,  parallelism=8,  test=False,
         key_group=predicate_resume["label_group"]
 
         cids_query=session.query(candidate_subclass.id).filter(candidate_subclass.split == 0)
+
         #skip cands already extracted
-        # TODO use simple max
         alreadyExistsGroup=session.query(LabelKey).filter(LabelKey.group==key_group).count()>0
         if alreadyExistsGroup:
-            subquery=session.query(candidate_subclass.id).\
-                join(Label, Label.candidate_id==candidate_subclass.id).\
-                join(LabelKey,LabelKey.id==Label.key_id).\
-                filter(LabelKey.group==key_group)
-
-            cids_query= session.query(candidate_subclass.id).filter(~candidate_subclass.id.in_(subquery)).filter(candidate_subclass.split == 0)
+            cids_query= get_train_cids_not_labeled(predicate_resume,session)
 
         if limit !=None:
             cids_query=cids_query.filter(candidate_subclass.id<limit)
@@ -49,7 +42,7 @@ def predicate_candidate_labelling(predicate_resume,  parallelism=8,  test=False,
         #if first run or adding a new labeling functionS is needed to set replace key set to True
         if not replace_key_set:
             replace_key_set=not alreadyExistsGroup
-        L_train = labeler.apply(parallelism=parallelism, cids_query=cids_query,
+        labeler.apply(parallelism=parallelism, cids_query=cids_query,
                                 key_group=key_group, clear=False, replace_key_set=replace_key_set)
 
     finally:
@@ -68,11 +61,6 @@ def get_labelling_functions(predicate_resume):
     object_type_end=object_type_split[len(object_type_split)-1]
     SentimanticSession = get_sentimantic_session()
     sentimantic_session = SentimanticSession()
-    sample_class=predicate_resume["sample_class"]
-    #samples=sentimantic_session.query(sample_class).all()
-    # known_samples=set()
-    # for sample in samples:
-    #     known_samples.add((sample.subject,sample.object))
 
     tmp_words=set([])
     for word in predicate_resume["words"]:
@@ -84,7 +72,6 @@ def get_labelling_functions(predicate_resume):
         try:
             subject_span=getattr(c,"subject").get_span()
             object_span=getattr(c,"object").get_span()
-            # if (subject_span, object_span)in known_samples:
             if is_in_known_samples(predicate_resume,sentimantic_session,subject_span,object_span):
                 return 1
 
@@ -106,6 +93,7 @@ def get_labelling_functions(predicate_resume):
         except Exception as e:
             print(e)
             print("Not found candidate"+str(c.id))
+            return 0
 
     def LF_distant_supervision2(c):
         try:
@@ -123,26 +111,9 @@ def get_labelling_functions(predicate_resume):
         except Exception as e:
             print(e)
             print("Not found candidate"+str(c.id))
-        #return -1 if np.random.rand() < 0.30 else 0
-    # def LF_distant_supervision_neg(c):
-    #     subject_span=getattr(c,"subject").get_span()
-    #     object_span=getattr(c,"object").get_span()
-    #     if (subject_span, object_span)in known_samples:
-    #         return 0
-    #
-    #     sample_subject_span= getattr(c,"subject")
-    #     sample_subjects=get_nouns(sample_subject_span,subject_type_end)
-    #     sample_object_span = getattr(c,"object")
-    #     sample_objects=get_nouns(sample_object_span,object_type_end)
-    #
-    #     sample_subjects.append(subject_span)
-    #     sample_objects.append(object_span)
-    #     for sample_subject in sample_subjects:
-    #         for sample_object in sample_objects:
-    #             if (sample_subject, sample_object)in known_samples:
-    #                 return 0
-    #     #todo implement date
-    #     return 1#-1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+            return 0
+
+
 
 
 
@@ -164,7 +135,7 @@ def get_labelling_functions(predicate_resume):
         return 0
 
     Lfs=[
-        LF_distant_supervision, LF_words_between, LF_words_left, LF_words_right#, LF_distant_supervision_neg
+        LF_distant_supervision, LF_words_between, LF_words_left, LF_words_right
     ]
     return Lfs
 
