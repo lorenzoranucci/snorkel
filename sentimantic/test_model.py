@@ -1,55 +1,64 @@
 import logging
 from snorkel import SnorkelSession
 from snorkel.learning.disc_models.rnn import reRNN
-from snorkel.models import Sentence, Candidate
-from corpus_parser import parse_wikipedia_dump
-from candidate_extraction import extract_binary_candidates
-from sqlalchemy import desc
-from snorkel.annotations import load_gold_labels
-from sqlalchemy import or_
+from snorkel.annotations import  LabelAnnotator
+from snorkel.learning import GenerativeModel
+from labelling import get_labelling_functions
+from models import *
+import matplotlib.pyplot as plt
 
-def test_model(predicate_resume, model_name=None, limit=None):
-    # Todo controlla che minchia hai committato iersera
-
+def test_model(predicate_resume,gen_model_name=None, disc_model_name=None):
     session = SnorkelSession()
-    candidate_subclass=predicate_resume["candidate_subclass"]
-
-    test_cands_query  = session.query(candidate_subclass).filter(candidate_subclass.split == 2).order_by(candidate_subclass.id)
-    L_gold_test = load_gold_labels(session, annotator_name='gold', split=2)
-
-    if limit is not None:
-        test_cands_query.limit(limit)
-    test_cands=test_cands_query.all()
-    # filter(or_(candidate_subclass.id==7581,
-        #            candidate_subclass.id==103456,
-        #            candidate_subclass.id==9697,
-        #            candidate_subclass.id==9699,
-        #            candidate_subclass.id==6810,
-        #            candidate_subclass.id==7663)).\
+    score_disc_model(predicate_resume,session,disc_model_name)
+    score_gen_model(predicate_resume,session,gen_model_name)
 
 
-    lstm = reRNN()
 
-    if model_name is None:
+def score_disc_model(predicate_resume, session, disc_model_name=None):
+    if disc_model_name is None:
         model_name="D"+predicate_resume["predicate_name"]+"Latest"
+
+    candidate_subclass=predicate_resume["candidate_subclass"]
+    test_cands_query  = session.query(candidate_subclass).filter(candidate_subclass.split == 2).order_by(candidate_subclass.id)
+    L_gold_test = get_gold_test_matrix(predicate_resume,session)
+    test_cands=test_cands_query.all()
+    lstm = reRNN()
     lstm.load(model_name)
     p, r, f1 = lstm.score(test_cands, L_gold_test)
     print("Prec: {0:.3f}, Recall: {1:.3f}, F1 Score: {2:.3f}".format(p, r, f1))
+    logging.info("Prec: {0:.3f}, Recall: {1:.3f}, F1 Score: {2:.3f}".format(p, r, f1))
     tp, fp, tn, fn = lstm.error_analysis(session, test_cands, L_gold_test)
+    logging.info("TP: {}, FP: {}, TN: {}, FN: {}".format(str(len(tp)),
+                                                         str(len(fp)),
+                                                         str(len(tn)),
+                                                         str(len(fn))))
     lstm.save_marginals(session, test_cands)
 
+def score_gen_model(predicate_resume, session, gen_model_name=None, parallelism=8):
+    if gen_model_name is None:
+        model_name="G"+predicate_resume["predicate_name"]+"Latest"
+    logging.info("Stats logging")
+    key_group=predicate_resume["label_group"]
+    train_cids_query=get_train_cids_with_span(predicate_resume,session)
 
-def before_test(predicate_resume,test_file_path=".data/test.xml"):
-    session = SnorkelSession()
-    count_sentences=session.query(Sentence).count()
-    parse_wikipedia_dump(test_file_path)
-    count_sentences2=session.query(Sentence).count()
-    count_parsed_sentences=count_sentences2-count_sentences
-    sents_query=session.query(Sentence).order_by(desc(Sentence.id)).slice(1,count_parsed_sentences)
+    LFs = get_labelling_functions(predicate_resume)
+    logging.info("Get marginals")
+    labeler = LabelAnnotator(lfs=LFs)
+    logging.info("Load matrix")
+    L_train = labeler.load_matrix(session,  cids_query=train_cids_query, key_group=key_group)
+    gen_model = GenerativeModel()
+    gen_model.load(model_name=model_name)
+    train_marginals = gen_model.marginals(L_train)
 
-    count_candidates=session.query(Candidate).filter(Candidate.split==3).count()
-    extract_binary_candidates(predicate_resume=predicate_resume,sents_query=sents_query, split=3)
-    count_candidates2=session.query(Candidate).filter(Candidate.split==3).count()
-    count_candidates_extracted=count_candidates2-count_candidates
-    candidates=sents_query=session.query(Candidate).order_by(desc(Candidate.id)).slice(1,count_candidates_extracted).all()
-    return candidates
+
+    dev_cids_query=get_dev_cids_with_span(predicate_resume,session)
+    L_gold_dev = get_gold_dev_matrix(predicate_resume,session)
+    L_dev = labeler.apply_existing(parallelism=parallelism, cids_query=dev_cids_query,
+                                   key_group=key_group, clear=False)
+
+    logging.info("\n"+gen_model.error_analysis(session, L_dev, L_gold_dev))
+    logging.info("\n"+L_dev.lf_stats(session, L_gold_dev, gen_model.learned_lf_stats()['Accuracy']))
+    logging.info("\n"+gen_model.weights.lf_accuracy)
+    logging.info("\n"+L_train.lf_stats(session))
+    plt.hist(train_marginals, bins=20)
+    plt.show()
