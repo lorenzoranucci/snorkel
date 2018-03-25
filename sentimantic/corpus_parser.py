@@ -40,7 +40,7 @@ def parse_wikipedia_dump(
                 print("Already parsed "+file)
                 logging.error("Already parsed "+file)
             i=i+1
-    logging.debug("Documents: %d", session.query(Document).count())
-    logging.debug("Sentences: %d", session.query(Sentence).count())
+    #logging.debug("Documents: %d", session.query(Document).count())
+    #logging.debug("Sentences: %d", session.query(Sentence).count())
     logging.info("Corpus parsing end")
 
