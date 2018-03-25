@@ -166,17 +166,6 @@ def camel_to_under(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
-def get_cands_to_delete_by_title(predicate_resume, session, documents_titles):
-    candidate_subclass=predicate_resume["candidate_subclass"]
-    #extract only sentences of documents listed
-    subquery=session.query(Document.id).filter(Document.name.in_(documents_titles))
-    #remove candidates already extracted for this documents
-    candidates_to_delete_query=session.query(candidate_subclass). \
-        join(Span,candidate_subclass.subject_id==Span.id). \
-        join(Sentence, Span.sentence_id==Sentence.id). \
-        filter(Sentence.document_id.in_(subquery))
-    return candidates_to_delete_query
-
 def get_sentences_ids_by_title_with_span(predicate_resume, session, documents_titles):
     candidate_subclass=predicate_resume["candidate_subclass"]
     subquery_docs=session.query(Document.id).filter(Document.name.in_(documents_titles))
@@ -293,3 +282,49 @@ where context."type"='span'
 and context.id not in(select span.id from span)
 """)
     get_sentimantic_engine().execute(stmt)
+
+
+
+def get_cands_to_delete_by_title(predicate_resume, session, documents_titles):
+    candidate_subclass=predicate_resume["candidate_subclass"]
+    #extract only sentences of documents listed
+    subquery=session.query(Document.id).filter(Document.name.in_(documents_titles))
+    #remove candidates already extracted for this documents
+    candidates_to_delete_query=session.query(candidate_subclass). \
+        join(Span,candidate_subclass.subject_id==Span.id). \
+        join(Sentence, Span.sentence_id==Sentence.id). \
+        filter(Sentence.document_id.in_(subquery))
+    return candidates_to_delete_query
+
+
+def delete_candidates_by_page_titles(predicate_resume, documents_titles):
+    candidate_subclass_name=predicate_resume["candidate_subclass"].__tablename__
+    stmt="""
+delete 
+from """+candidate_subclass_name+"""
+where """+candidate_subclass_name+""".subject_id in (
+
+	select span.id 
+	from span 
+	join sentence on span.sentence_id=sentence.id
+	where sentence.id in (
+		select sentence.id 
+		from sentence 
+		join document on sentence.document_id=document.id
+		where document.name in (
+"""
+
+    i=0
+    for documents_title in documents_titles:
+        stmt=stmt+""" '"""+documents_title+"""' """
+        i=i+1
+        if i<len(documents_titles):
+            stmt=stmt+""" ,"""
+    stmt=stmt+""" )))"""
+
+    get_sentimantic_engine().execute(stmt)
+
+    # candidates_to_delete=get_cands_to_delete_by_title(predicate_resume,session,documents_titles).all()
+    # for candidate_to_delete in candidates_to_delete:
+    #     session.delete(candidate_to_delete)
+    # session.commit()

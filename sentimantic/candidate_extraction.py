@@ -32,18 +32,14 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,
     logging.info("Count candidates")
     sents_query_id = session.query(Sentence.id)
     candidates_count = session.query(CandidateSubclass).count()
-    logging.info("Delete span orphans")
-    delete_orphan_spans()
+    #logging.info("Delete span orphans")
+    #delete_orphan_spans()
     if documents_titles==None and candidates_count>1 and clear==False:
         sents_query_id = get_sentences_ids_not_extracted(predicate_resume, session)
     elif documents_titles != None:
         #delete candidates for test and dev
         logging.info("Deleting candidates")
-        print("Deleting candidates")
-        candidates_to_delete=get_cands_to_delete_by_title(predicate_resume,session,documents_titles).all()
-        for candidate_to_delete in candidates_to_delete:
-            session.delete(candidate_to_delete)
-        session.commit()
+        delete_candidates_by_page_titles(predicate_resume,documents_titles)
         sents_query_id=get_sentences_ids_by_title_with_span(predicate_resume,session,documents_titles)
 
     if limit is not None:
