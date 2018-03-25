@@ -177,10 +177,15 @@ def get_cands_to_delete_by_title(predicate_resume, session, documents_titles):
         filter(Sentence.document_id.in_(subquery))
     return candidates_to_delete_query
 
-def get_sentences_ids_by_title(predicate_resume, session, documents_titles):
+def get_sentences_ids_by_title_with_span(predicate_resume, session, documents_titles):
     candidate_subclass=predicate_resume["candidate_subclass"]
-    subquery=session.query(Document.id).filter(Document.name.in_(documents_titles))
-    return session.query(Sentence.id).filter(Sentence.document_id.in_(subquery))
+    subquery_docs=session.query(Document.id).filter(Document.name.in_(documents_titles))
+    subquery_span=session.query(Sentence.id). \
+        join(Span, Span.sentence_id==Sentence.id). \
+        join(candidate_subclass, candidate_subclass.subject_id==Span.id)
+    return session.query(Sentence.id).\
+        filter(Sentence.document_id.in_(subquery_docs)).\
+        filter(~Sentence.id.in_(subquery_span))
 
 
 def get_sentences_ids_not_extracted(predicate_resume, session):
