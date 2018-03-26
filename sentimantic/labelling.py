@@ -90,9 +90,9 @@ def get_labelling_functions(predicate_resume):
                         return 1
             #todo implement date
             #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
-            #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+            return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
             #return 0
-            return -1 if np.random.rand() < 0.10 else 0
+            #return -1 if np.random.rand() < 0.10 else 0
         except Exception as e:
             print(e)
             print("Not found candidate"+str(c.id))
@@ -124,17 +124,17 @@ def get_labelling_functions(predicate_resume):
     def LF_words_between(c):
         if len(words.intersection(get_between_tokens(c))) > 0:
             return 1
-        return -1 if np.random.rand() < 0.03 else 0
+        return -1 if np.random.rand() < 0.10 else 0
         #return 0
     def LF_words_left(c):
         if len(words.intersection(get_left_tokens(c))) > 0:
             return 1
-        return -1 if np.random.rand() < 0.03 else 0
+        return -1 if np.random.rand() < 0.10 else 0
         #return 0
     def LF_words_right(c):
         if len(words.intersection(get_right_tokens(c))) > 0:
             return 1
-        return -1 if np.random.rand() < 0.03 else 0
+        return -1 if np.random.rand() < 0.10 else 0
         #return 0
 
     Lfs=[
