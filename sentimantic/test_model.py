@@ -32,7 +32,17 @@ def score_disc_model(predicate_resume, session, disc_model_name=None):
                                                          str(len(fp)),
                                                          str(len(tn)),
                                                          str(len(fn))))
+
     lstm.save_marginals(session, test_cands)
+    predictions=lstm.predictions(test_cands)
+    marginals=lstm.marginals(test_cands)
+    i=0
+    for candidate in test_cands:
+        print(candidate.get_parent().text+" || "+str(marginals[i])+" || "+str(predictions[i]))
+        logging.info(candidate.get_parent().text+" || "+str(marginals[i])+" || "+str(predictions[i]))
+        i=i+1
+
+
 
 def score_gen_model(predicate_resume, session, gen_model_name=None, parallelism=8):
     if gen_model_name is None:
@@ -58,6 +68,7 @@ def score_gen_model(predicate_resume, session, gen_model_name=None, parallelism=
     gen_model.save_marginals(session, dev_cands)
 
 
+    logging.info("Applying ")
     test_cids_query=get_test_cids_with_span(predicate_resume,session)
     L_gold_test = get_gold_test_matrix(predicate_resume,session)
     L_test = labeler.apply_existing(parallelism=parallelism, cids_query=test_cids_query,
