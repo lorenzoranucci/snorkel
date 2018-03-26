@@ -34,13 +34,13 @@ def score_disc_model(predicate_resume, session, disc_model_name=None):
                                                          str(len(fn))))
 
     lstm.save_marginals(session, test_cands)
-    predictions=lstm.predictions(test_cands)
-    marginals=lstm.marginals(test_cands)
-    i=0
-    for candidate in test_cands:
-        print(candidate.get_parent().text+" || "+str(marginals[i])+" || "+str(predictions[i]))
-        logging.info(candidate.get_parent().text+" || "+str(marginals[i])+" || "+str(predictions[i]))
-        i=i+1
+    #predictions=lstm.predictions(test_cands)
+    #marginals=lstm.marginals(test_cands)
+    #i=0
+    #for candidate in test_cands:
+    #    print(candidate.get_parent().text+" || "+str(marginals[i])+" || "+str(predictions[i]))
+    #    logging.info(candidate.get_parent().text+" || "+str(marginals[i])+" || "+str(predictions[i]))
+    #    i=i+1
 
 
 
