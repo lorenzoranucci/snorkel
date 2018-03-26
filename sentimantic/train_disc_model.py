@@ -18,7 +18,7 @@ def train_disc_model(predicate_resume, parallelism=8):
     train_kwargs = {
         'lr':         0.01,
         'dim':        50,
-        'n_epochs':   1,
+        'n_epochs':   10,
         'dropout':    0.25,
         'print_freq': 1,
         'max_sentence_length': 400
