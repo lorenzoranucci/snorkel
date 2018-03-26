@@ -39,7 +39,7 @@ def _get_labeler(predicate_resume):
 
 
 def _load_matrix(predicate_resume, session, labeler):
-    cids_query = get_train_cids_with_labels_and_span(predicate_resume, session)
+    cids_query = get_train_cids_with_span(predicate_resume, session)
     key_group = predicate_resume["label_group"]
     L_train = labeler.load_matrix(session,  cids_query=cids_query, key_group=key_group)
     return L_train
