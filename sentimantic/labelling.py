@@ -90,7 +90,8 @@ def get_labelling_functions(predicate_resume):
                         return 1
             #todo implement date
             #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
-            return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+            #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+            return 0
         except Exception as e:
             print(e)
             print("Not found candidate"+str(c.id))
