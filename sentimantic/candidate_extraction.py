@@ -39,8 +39,8 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,
     elif documents_titles != None:
         #delete candidates for test and dev
         logging.info("Deleting candidates")
-        delete_candidates_by_page_titles(predicate_resume,documents_titles)
-        sents_query_id=get_sentences_ids_by_title_with_span(predicate_resume,session,documents_titles)
+        update_candidates_by_page_titles(predicate_resume,documents_titles, split)
+        sents_query_id=get_sentences_ids_by_title_not_extracted(predicate_resume,session,documents_titles)
 
     if limit is not None:
         sents_query_id=sents_query_id.limit(limit)
@@ -49,6 +49,7 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,
     sents_query=session.query(Sentence).filter(Sentence.id.in_(sents_query_id))
 
 
+    logging.info("Counting sentences")
     sents_count=sents_query.count()
 
     if sents_count > page_size:
@@ -65,13 +66,13 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,
             set_name=str(split)
             split2=split
 
-        logging.debug('\tQuering sentences from %s to %s, in set \'%s\'', (page*(i-1)), page*i, set_name)
+        logging.info('\tQuering sentences from %s to %s, in set \'%s\'', (page*(i-1)), page*i, set_name)
         sents=sents_query.order_by(Sentence.id).slice((page*(i-1)), page*i).all()
+        logging.info("Extracting")
         if sents == None or len(sents) < 1 :
             break
         cand_extractor.apply(sents, split=split2, clear=clear, progress_bar=False, parallelism=parallelism)
-        extracted_count=session.query(CandidateSubclass).filter(CandidateSubclass.split == split).count()
-        logging.debug('\t\t%d candidates extracted for %s', extracted_count, CandidateSubclass.__name__)
+        logging.info('\t\tcandidates extracted for %s',  CandidateSubclass.__name__)
         i=i+1
         clear=False
     logging.info("Finished candidates extraction ")

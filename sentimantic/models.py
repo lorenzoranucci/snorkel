@@ -166,7 +166,7 @@ def camel_to_under(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
-def get_sentences_ids_by_title_with_span(predicate_resume, session, documents_titles):
+def get_sentences_ids_by_title_not_extracted(predicate_resume, session, documents_titles):
     candidate_subclass=predicate_resume["candidate_subclass"]
     subquery_docs=session.query(Document.id).filter(Document.name.in_(documents_titles))
     subquery_span=session.query(Sentence.id). \
@@ -201,6 +201,8 @@ def get_train_cids_not_labeled(predicate_resume,session):
         filter(candidate_subclass.split == 0)
     return cids_query
 
+def get_train_cids_with_labels_and_span(predicate_resume,session):
+    return get_cands_with_span(predicate_resume, session, 0, only_id=True, with_marginals=False, with_label=True)
 
 def get_train_cids_with_marginals_and_span(predicate_resume,session):
     return get_cands_with_span(predicate_resume, session, 0, only_id=True, with_marginals=True)
@@ -234,13 +236,16 @@ def get_test_cids_with_span(predicate_resume,session):
     return get_cands_with_span(predicate_resume, session, 2, only_id=True, with_marginals=False)
 
 
-def get_cands_with_span(predicate_resume,session, split,only_id=False, with_marginals=True):
+def get_cands_with_span(predicate_resume,session, split,only_id=False, with_marginals=False, with_label=False):
     candidate_subclass=predicate_resume["candidate_subclass"]
     subquery=session.query(Span.id)
     if only_id:
         query=session.query(candidate_subclass.id)
     else:
         query=session.query(candidate_subclass)
+
+    if with_label:
+        query=query.join(Label,Label.candidate_id==candidate_subclass.id)
     if with_marginals:
         query=query. \
             join(Marginal, Marginal.candidate_id==candidate_subclass.id)
@@ -297,12 +302,11 @@ def get_cands_to_delete_by_title(predicate_resume, session, documents_titles):
     return candidates_to_delete_query
 
 
-def delete_candidates_by_page_titles(predicate_resume, documents_titles):
+def update_candidates_by_page_titles(predicate_resume, documents_titles, split):
     candidate_subclass_name=predicate_resume["candidate_subclass"].__tablename__
     stmt="""
-delete 
-from candidate
-where candidate.id in(
+update candidate set split="""+str(split)+"""
+where candidate.split != """+str(split)+""" and  candidate.id in(
 select """+candidate_subclass_name+""".id
 from """+candidate_subclass_name+"""
 where """+candidate_subclass_name+""".subject_id in (
@@ -325,7 +329,7 @@ where """+candidate_subclass_name+""".subject_id in (
             stmt=stmt+""" ,"""
     stmt=stmt+""" ))))"""
 
-    get_sentimantic_engine().execute(stmt)
+    get_sentimantic_engine().execute(text(stmt))
 
     # candidates_to_delete=get_cands_to_delete_by_title(predicate_resume,session,documents_titles).all()
     # for candidate_to_delete in candidates_to_delete:
