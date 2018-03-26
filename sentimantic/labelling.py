@@ -155,7 +155,7 @@ def get_dbpedia_noun(ngrams, type):
         response_ok=False
         while response_ok==False:
             try:
-                response_subject=requests.get("http://lookup:1111/api/search/PrefixSearch",{"MaxHits":4,"QueryClass":type,"QueryString":noun})
+                response_subject=requests.get("http://lookup:1111/api/search/KeywordSearch",{"MaxHits":4,"QueryClass":type,"QueryString":noun})
                 response_ok=response_subject.ok
             except Exception:
                 time.sleep(5)
