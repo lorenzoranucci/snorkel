@@ -301,6 +301,9 @@ def delete_candidates_by_page_titles(predicate_resume, documents_titles):
     candidate_subclass_name=predicate_resume["candidate_subclass"].__tablename__
     stmt="""
 delete 
+from candidate
+where candidate.id in(
+select """+candidate_subclass_name+""".id
 from """+candidate_subclass_name+"""
 where """+candidate_subclass_name+""".subject_id in (
 
@@ -320,7 +323,7 @@ where """+candidate_subclass_name+""".subject_id in (
         i=i+1
         if i<len(documents_titles):
             stmt=stmt+""" ,"""
-    stmt=stmt+""" )))"""
+    stmt=stmt+""" ))))"""
 
     get_sentimantic_engine().execute(stmt)
 
