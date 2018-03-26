@@ -51,6 +51,13 @@ def score_gen_model(predicate_resume, session, gen_model_name=None, parallelism=
     train_marginals = gen_model.marginals(L_train)
 
 
+    logging.info("Saving marginals")
+    candidate_subclass=predicate_resume["candidate_subclass"]
+    dev_cands_query  = session.query(candidate_subclass).filter(candidate_subclass.split == 1).order_by(candidate_subclass.id)
+    dev_cands=dev_cands_query.all()
+    gen_model.save_marginals(session, dev_cands)
+
+
     test_cids_query=get_test_cids_with_span(predicate_resume,session)
     L_gold_test = get_gold_test_matrix(predicate_resume,session)
     L_test = labeler.apply_existing(parallelism=parallelism, cids_query=test_cids_query,
