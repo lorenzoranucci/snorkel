@@ -9,8 +9,11 @@ import matplotlib.pyplot as plt
 
 def test_model(predicate_resume,gen_model_name=None, disc_model_name=None):
     session = SnorkelSession()
-    score_disc_model(predicate_resume,session,disc_model_name)
+    score_lfs(predicate_resume,session)
     score_gen_model(predicate_resume,session,gen_model_name)
+    score_disc_model(predicate_resume,session,disc_model_name)
+
+
 
 
 
@@ -43,7 +46,18 @@ def score_disc_model(predicate_resume, session, disc_model_name=None):
     #    logging.info(candidate.get_parent().text+" || "+str(marginals[i])+" || "+str(predictions[i]))
     #    i=i+1
 
+def score_lfs(predicate_resume, session):
+    L_train = load_ltrain(predicate_resume,session)
+    logging.info(L_train.lf_stats(session))
+    print(L_train.lf_stats(session))
 
+def load_ltrain(predicate_resume, session):
+    key_group=predicate_resume["label_group"]
+    LFs = get_labelling_functions(predicate_resume)
+    labeler = LabelAnnotator(lfs=LFs)
+    train_cids_query=get_train_cids_with_span(predicate_resume,session)
+    L_train = labeler.load_matrix(session,  cids_query=train_cids_query, key_group=key_group)
+    return L_train
 
 def score_gen_model(predicate_resume, session, gen_model_name=None, parallelism=8):
     if gen_model_name is None:
@@ -51,35 +65,32 @@ def score_gen_model(predicate_resume, session, gen_model_name=None, parallelism=
     logging.info("Stats logging")
     key_group=predicate_resume["label_group"]
     train_cids_query=get_train_cids_with_span(predicate_resume,session)
+    L_train = load_ltrain(predicate_resume,session)
+    gen_model = GenerativeModel()
+    gen_model.load(model_name)
+    gen_model.train(L_train, epochs=100, decay=0.95, step_size=0.1 / L_train.shape[0], reg_param=1e-6)
+    logging.info(gen_model.weights.lf_accuracy)
+    print(gen_model.weights.lf_accuracy)
+    train_marginals = gen_model.marginals(L_train)
+    plt.hist(train_marginals, bins=20)
+    plt.show()
+    gen_model.learned_lf_stats()
+
+
 
     LFs = get_labelling_functions(predicate_resume)
-    logging.info("Get marginals")
     labeler = LabelAnnotator(lfs=LFs)
-    logging.info("Load matrix")
-    L_train = labeler.load_matrix(session,  cids_query=train_cids_query, key_group=key_group)
-    gen_model = GenerativeModel()
-    gen_model.load(model_name=model_name)
-    train_marginals = gen_model.marginals(L_train)
-
-
-    logging.info("Saving marginals")
-    candidate_subclass=predicate_resume["candidate_subclass"]
-    dev_cands_query  = session.query(candidate_subclass).filter(candidate_subclass.split == 1).order_by(candidate_subclass.id)
-    dev_cands=dev_cands_query.all()
-    gen_model.save_marginals(session, dev_cands)
-
-
-    logging.info("Applying ")
-    test_cids_query=get_test_cids_with_span(predicate_resume,session)
-    L_gold_test = get_gold_test_matrix(predicate_resume,session)
-    L_test = labeler.apply_existing(parallelism=parallelism, cids_query=test_cids_query,
-                                   key_group=key_group, clear=False)
-
-    tp, fp, tn, fn = gen_model.error_analysis(session, L_test, L_gold_test)
+    L_dev = labeler.apply_existing(cids_query=get_dev_cids_with_span(predicate_resume,session))
+    L_gold_dev = get_gold_dev_matrix(predicate_resume,session)
+    tp, fp, tn, fn = gen_model.error_analysis(session, L_dev, L_gold_dev)
     logging.info("TP: {}, FP: {}, TN: {}, FN: {}".format(str(len(tp)),
                                                          str(len(fp)),
                                                          str(len(tn)),
                                                          str(len(fn))))
-    logging.info("\n"+L_train.lf_stats(session))
-    plt.hist(train_marginals, bins=20)
-    plt.show()
+
+
+
+
+
+
+
