@@ -10,7 +10,7 @@ import numpy as np
 from textacy.similarity  import  levenshtein, jaccard, jaro_winkler, hamming, token_sort_ratio
 from snorkel.lf_helpers import (
     get_left_tokens, get_right_tokens, get_between_tokens,
-    get_text_between, get_tagged_text,
+    get_text_between, get_tagged_text, contains_token
 )
 from models import *
 
@@ -106,18 +106,14 @@ def get_labelling_functions(predicate_resume):
 
     def LF_distant_supervision_and_words(c):
         try:
-
-            if len(words.intersection(c.get_parent().words)) < 1 \
-                    or len(not_words.intersection(c.get_parent().words))>0:
+            if (len(words.intersection(c.get_parent().words)) < 1 \
+                    or len(not_words.intersection(c.get_parent().words))>0) \
+                and np.random.rand() < 0.7:
                 return -1
             subject_span=getattr(c,"subject").get_span()
             object_span=getattr(c,"object").get_span()
             if is_in_known_samples(predicate_resume,sentimantic_session,subject_span,object_span):
-                if len(words.intersection(c.get_parent().words)) >0 \
-                        or len(not_words.intersection(c.get_parent().words))<1:
-                    return 1
-                else:
-                    return 0
+                return 1
 
             sample_subject_span= getattr(c,"subject")
             sample_subjects=get_nouns(sample_subject_span,subject_type_end)
@@ -130,11 +126,8 @@ def get_labelling_functions(predicate_resume):
                 for sample_object in sample_objects:
                     # if (sample_subject, sample_object)in known_samples:
                     if is_in_known_samples(predicate_resume,sentimantic_session,sample_subject,sample_object):
-                        if len(words.intersection(c.get_parent().words)) >0 \
-                                or len(not_words.intersection(c.get_parent().words))<1:
-                            return 1
-                        else:
-                            return 0
+                        return 1
+
             #todo implement date
             return 0
         except Exception as e:
