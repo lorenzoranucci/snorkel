@@ -135,9 +135,9 @@ def get_query_where(predicate_resume, language='en'):
     object_variable="objectLabel"
     if (predicate_resume["object_ne"]!="DATE"):
         object_type_filter=""" 
-            ?o a <""" + range_ + """>. 
+            #?o a <""" + range_ + """>. 
             ?o <http://www.w3.org/2000/01/rdf-schema#label> ?objectLabel .
-            FILTER (lang(?objectLabel) = '"""+language+"""'). 
+            #FILTER (lang(?objectLabel) = '"""+language+"""'). 
             """
         object_variable="o"
 
@@ -145,10 +145,10 @@ def get_query_where(predicate_resume, language='en'):
     query_where = """
         WHERE{
             ?s <""" + predicate_resume["predicate_URI"] + """> ?"""+object_variable+""" .
-            ?s a <""" + domain + """>.
+            #?s a <""" + domain + """>.
             """+object_type_filter+"""
             ?s <http://www.w3.org/2000/01/rdf-schema#label> ?subjectLabel .
-            FILTER (lang(?subjectLabel) = '"""+language+"""')
+            #FILTER (lang(?subjectLabel) = '"""+language+"""')
         }\n
         """
     return query_where
