@@ -13,9 +13,9 @@ def download_articles(page_titles_list, dump_folder_path, lang="en"):
         if os.path.isfile(dump_file_path):
             logging.error(title+": Dump file already exists")
             continue
-        file = open(dump_file_path, 'a+')
         try:
             page=wikipedia.page(title)
+            file = open(dump_file_path, 'a+')
             root=ET.Element("documents")
             doc = ET.SubElement(root, "doc")
             doc.set('title', page.title)
