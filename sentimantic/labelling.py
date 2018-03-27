@@ -97,8 +97,8 @@ def get_labelling_functions(predicate_resume):
             #todo implement date
             #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
             #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
-            #return 0
-            return -1 if np.random.rand() < 0.15 else 0
+            return 0
+            #return -1 if np.random.rand() < 0.15 else 0
         except Exception as e:
             print(e)
             print("Not found candidate"+str(c.id))
@@ -107,9 +107,8 @@ def get_labelling_functions(predicate_resume):
     def LF_distant_supervision_and_words(c):
         try:
             if (len(words.intersection(c.get_parent().words)) < 1 \
-                    or len(not_words.intersection(c.get_parent().words))>0) \
-                and np.random.rand() < 0.7:
-                return -1
+                    or len(not_words.intersection(get_between_tokens(c)))>0) :
+                return 0
             subject_span=getattr(c,"subject").get_span()
             object_span=getattr(c,"object").get_span()
             if is_in_known_samples(predicate_resume,sentimantic_session,subject_span,object_span):
@@ -154,26 +153,24 @@ def get_labelling_functions(predicate_resume):
             return 0
 
     def LF_not_words(c):
-        return -1 if len(not_words.intersection(c.get_parent().words)) > 0 else 0
+        return -1 if len(not_words.intersection(get_between_tokens(c))) > 0 else 0
 
-
-
+    def LF_no_word_in_sentence(c):
+        return -1 if np.random.rand() < 0.75 \
+                     and len(words.intersection(c.get_parent().words)) == 0 else 0
 
     def LF_words_between(c):
         if len(words.intersection(get_between_tokens(c))) > 0:
             return 1
-        return -1 if np.random.rand() < 0.06 else 0
-        #return 0
+        return 0
     def LF_words_left(c):
         if len(words.intersection(get_left_tokens(c))) > 0:
             return 1
-        return -1 if np.random.rand() < 0.06 else 0
-        #return 0
+        return 0
     def LF_words_right(c):
         if len(words.intersection(get_right_tokens(c))) > 0:
             return 1
-        return -1 if np.random.rand() < 0.06 else 0
-        #return 0
+        return 0
 
     Lfs=[
         LF_distant_supervision,
@@ -181,7 +178,8 @@ def get_labelling_functions(predicate_resume):
         LF_words_between,
         LF_words_left,
         LF_words_right,
-        LF_not_words
+        LF_not_words,
+        LF_no_word_in_sentence
     ]
     return Lfs
 
