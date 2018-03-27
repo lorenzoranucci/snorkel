@@ -42,7 +42,7 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,
         update_candidates_by_page_titles(predicate_resume,documents_titles, split)
         sents_query_id=get_sentences_ids_by_title_not_extracted(predicate_resume,session,documents_titles)
 
-    if limit is not None:
+    if limit is not None and documents_titles is None:
         sents_query_id=sents_query_id.limit(limit)
 
 
