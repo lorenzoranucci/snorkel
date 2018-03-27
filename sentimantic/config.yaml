@@ -140,6 +140,7 @@ predicates:
       - 'husband'
       - 'ex-wife'
       - 'ex-husband'
+      - 'married'
     not_words:
       - 'father'
       - 'mother'
