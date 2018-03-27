@@ -72,8 +72,8 @@ def score_gen_model(predicate_resume, session, gen_model_name=None, parallelism=
     logging.info(gen_model.weights.lf_accuracy)
     print(gen_model.weights.lf_accuracy)
     train_marginals = gen_model.marginals(L_train)
-    plt.hist(train_marginals, bins=20)
-    plt.show()
+    #plt.hist(train_marginals, bins=20)
+    #plt.show()
     gen_model.learned_lf_stats()
 
 
