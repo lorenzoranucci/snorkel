@@ -60,7 +60,7 @@ def load_ltrain(predicate_resume, session):
     L_train = labeler.load_matrix(session,  cids_query=train_cids_query, key_group=key_group)
     return L_train
 
-def score_gen_model(predicate_resume, session, gen_model_name=None, parallelism=8):
+def score_gen_model(predicate_resume, session, gen_model_name=None, parallelism=16):
     if gen_model_name is None:
         model_name="G"+predicate_resume["predicate_name"]+"Latest"
     logging.info("Stats logging")
@@ -81,7 +81,7 @@ def score_gen_model(predicate_resume, session, gen_model_name=None, parallelism=
 
     LFs = get_labelling_functions(predicate_resume)
     labeler = LabelAnnotator(lfs=LFs)
-    L_dev = labeler.apply_existing(cids_query=get_dev_cids_with_span(predicate_resume,session))
+    L_dev = labeler.apply_existing(cids_query=get_dev_cids_with_span(predicate_resume,session), parallelism=parallelism)
     L_gold_dev = get_gold_dev_matrix(predicate_resume,session)
     tp, fp, tn, fn = gen_model.error_analysis(session, L_dev, L_gold_dev)
     logging.info("TP: {}, FP: {}, TN: {}, FN: {}".format(str(len(tp)),
