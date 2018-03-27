@@ -23,10 +23,7 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,
     object_matcher = get_matcher(object_ne)
     cand_extractor = CandidateExtractor(CandidateSubclass,
                                         [ngrams, ngrams],
-                                        [subject_matcher,object_matcher],
-                                        self_relations=True,
-                                        nested_relations=True,
-                                        symmetric_relations=True)
+                                        [subject_matcher,object_matcher])
 
     #skip sentences already extracted
     logging.info("Count candidates")
@@ -51,7 +48,8 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,
 
     logging.info("Counting sentences")
     sents_count=sents_query.count()
-
+    logging.info("Sents count"+str(sents_count))
+    print("Sents count"+str(sents_count))
     if sents_count > page_size:
         page=page_size
     else:
