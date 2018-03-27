@@ -11,7 +11,10 @@ def get_predicate_samples_from_KB(predicate_resume, kb_SPARQL_endpoint="https://
 
     logging.info('Starting downloading samples for predicate "%s" domain "%s", range "%s"',
                  predicate_resume["predicate_URI"], predicate_resume["subject_type"], predicate_resume["object_type"])
-
+    is_to_download=predicate_resume["configs"]["samples_download"]
+    if is_to_download==False:
+        logging.info("Samples download config is false, skipping....")
+        return
     count=count_samples(predicate_resume, language=language,
                   kb_SPARQL_endpoint=kb_SPARQL_endpoint, defaultGraph=defaultGraph)
     pages=count/page_size+1
