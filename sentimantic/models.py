@@ -306,7 +306,9 @@ def update_candidates_by_page_titles(predicate_resume, documents_titles, split):
     candidate_subclass_name=predicate_resume["candidate_subclass"].__tablename__
     stmt="""
 update candidate set split="""+str(split)+"""
-where candidate.split != """+str(split)+""" and  candidate.id in(
+where candidate.split != """+str(split)+""" and 
+and candidate.type='"""+candidate_subclass_name+"""' 
+and candidate.id in(
 select """+candidate_subclass_name+""".id
 from """+candidate_subclass_name+"""
 where """+candidate_subclass_name+""".subject_id in (
