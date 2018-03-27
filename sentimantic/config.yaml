@@ -1,6 +1,6 @@
 predicates:
-  - name:'birthPlace'
-    uri:'http://dbpedia.org/ontology/birthPlace'
+  - name: 'birthPlace'
+    uri: 'http://dbpedia.org/ontology/birthPlace'
     samples_download: false
     words:
       - 'born'
