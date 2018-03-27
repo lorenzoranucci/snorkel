@@ -24,6 +24,7 @@ def score_disc_model(predicate_resume, session, disc_model_name=None):
     test_cands=test_cands_query.all()
     lstm = reRNN()
     lstm.load(model_name)
+    lstm.save_marginals(session, test_cands)
     p, r, f1 = lstm.score(test_cands, L_gold_test)
     print("Prec: {0:.3f}, Recall: {1:.3f}, F1 Score: {2:.3f}".format(p, r, f1))
     logging.info("Prec: {0:.3f}, Recall: {1:.3f}, F1 Score: {2:.3f}".format(p, r, f1))
@@ -33,7 +34,7 @@ def score_disc_model(predicate_resume, session, disc_model_name=None):
                                                          str(len(tn)),
                                                          str(len(fn))))
 
-    lstm.save_marginals(session, test_cands)
+
     #predictions=lstm.predictions(test_cands)
     #marginals=lstm.marginals(test_cands)
     #i=0
