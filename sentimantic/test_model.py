@@ -10,8 +10,9 @@ import matplotlib.pyplot as plt
 def test_model(predicate_resume,gen_model_name=None, disc_model_name=None):
     session = SnorkelSession()
     score_lfs(predicate_resume,session)
-    score_gen_model(predicate_resume,session,gen_model_name)
     score_disc_model(predicate_resume,session,disc_model_name)
+    score_gen_model(predicate_resume,session,gen_model_name)
+
 
 
 
