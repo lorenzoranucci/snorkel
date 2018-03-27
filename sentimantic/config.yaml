@@ -132,9 +132,9 @@ predicates:
       - 'Chester A. Arthur'
       - 'Grover Cleveland'
 
-  - name:'spouse'
+  - name: 'spouse'
     samples_download: true
-    uri:'http://dbpedia.org/ontology/spouse'
+    uri: 'http://dbpedia.org/ontology/spouse'
     words:
       - 'spouse'
       - 'wife'
@@ -278,9 +278,9 @@ predicates:
       - 'James A. Garfield'
       - 'Chester A. Arthur'
       - 'Grover Cleveland'
-  - name:'team'
+  - name: 'team'
     samples_download: true
-    uri:'http://dbpedia.org/ontology/team'
+    uri: 'http://dbpedia.org/ontology/team'
     words:
       - 'played'
       - 'signed'
