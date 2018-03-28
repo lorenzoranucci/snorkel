@@ -18,7 +18,7 @@ def extract_binary_candidates(predicate_resume, clear=False, parallelism=8,
     CandidateSubclass = predicate_resume["candidate_subclass"]
 
 
-    ngrams= Ngrams(n_max=10)
+    ngrams= Ngrams(n_max=7)
     subject_matcher = get_matcher(subject_ne)
     object_matcher = get_matcher(object_ne)
     cand_extractor = CandidateExtractor(CandidateSubclass,
