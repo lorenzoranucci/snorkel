@@ -8,6 +8,8 @@ from snorkel.annotations import LabelAnnotator
 from nltk.util import ngrams
 import numpy as np
 from textacy.similarity  import  levenshtein, jaccard, jaro_winkler, hamming, token_sort_ratio
+
+from snorkel.learning import GenerativeModel
 from snorkel.lf_helpers import (
     get_left_tokens, get_right_tokens, get_between_tokens,
     get_text_between, get_tagged_text, contains_token
@@ -26,13 +28,13 @@ def predicate_candidate_labelling(predicate_resume,  parallelism=8,  limit=None,
 
         cids_query=session.query(candidate_subclass.id).filter(candidate_subclass.split == 0)
 
-        #skip cands already extracted
-        alreadyExistsGroup=session.query(LabelKey).filter(LabelKey.group==key_group).count()>0
-        if alreadyExistsGroup:
-            cids_query= get_train_cids_not_labeled(predicate_resume,session)
+        ##skip cands already extracted
+        #alreadyExistsGroup=session.query(LabelKey).filter(LabelKey.group==key_group).count()>0
+        #if alreadyExistsGroup:
+        #    cids_query= get_train_cids_not_labeled(predicate_resume,session)
 
-        if limit !=None:
-            cids_query=cids_query.filter(candidate_subclass.id<limit)
+        #if limit !=None:
+        #    cids_query=cids_query.filter(candidate_subclass.id<limit)
 
 
         LFs = get_labelling_functions(predicate_resume)
@@ -40,11 +42,23 @@ def predicate_candidate_labelling(predicate_resume,  parallelism=8,  limit=None,
         labeler = LabelAnnotator(lfs=LFs)
         np.random.seed(1701)
 
-        #if first run or adding a new labeling functionS is needed to set replace key set to True
-        if not replace_key_set:
-            replace_key_set=not alreadyExistsGroup
-        labeler.apply(parallelism=parallelism, cids_query=cids_query,
-                                key_group=key_group, clear=False, replace_key_set=replace_key_set)
+        ##if first run or adding a new labeling functionS is needed to set replace key set to True
+        #if not replace_key_set:
+        #    replace_key_set=not alreadyExistsGroup
+        L_train=labeler.apply(parallelism=parallelism, cids_query=cids_query,
+                                key_group=key_group, clear=True, replace_key_set=True)
+        L_train.lf_stats(session)
+
+        gen_model = GenerativeModel()
+        gen_model.train(L_train, epochs=100, decay=0.95, step_size=0.1 / L_train.shape[0], reg_param=1e-6)
+        train_marginals = gen_model.marginals(L_train)
+        import matplotlib.pyplot as plt
+        plt.hist(train_marginals, bins=20)
+        plt.show()
+        plt.savefig()
+        gen_model.learned_lf_stats()
+        from snorkel.annotations import save_marginals
+        save_marginals(session, L_train, train_marginals)
 
     finally:
         logging.info("Finished labeling ")
@@ -79,6 +93,8 @@ def get_labelling_functions(predicate_resume):
         try:
             subject_span=getattr(c,"subject").get_span()
             object_span=getattr(c,"object").get_span()
+            if subject_span==object_span:
+                return -1
             if is_in_known_samples(predicate_resume,sentimantic_session,subject_span,object_span):
                 return 1
 
@@ -106,11 +122,14 @@ def get_labelling_functions(predicate_resume):
 
     def LF_distant_supervision_and_words(c):
         try:
+
             if (len(words.intersection(c.get_parent().words)) < 1 \
                     or len(not_words.intersection(get_between_tokens(c)))>0) :
                 return 0
             subject_span=getattr(c,"subject").get_span()
             object_span=getattr(c,"object").get_span()
+            if subject_span==object_span:
+                return -1
             if is_in_known_samples(predicate_resume,sentimantic_session,subject_span,object_span):
                 return 1
 
@@ -138,8 +157,10 @@ def get_labelling_functions(predicate_resume):
         try:
             subject_span=getattr(c,"subject").get_span()
             object_span=getattr(c,"object").get_span()
+            if subject_span==object_span:
+                return -1
             # if (subject_span, object_span)in known_samples:
-            if is_in_known_samples2(predicate_resume,sentimantic_session,subject_span,object_span):
+            if is_in_known_samples(predicate_resume,sentimantic_session,subject_span,object_span):
                 return 1
             subject_span=getattr(c,"subject")
             object_span=getattr(c,"object")
@@ -174,7 +195,7 @@ def get_labelling_functions(predicate_resume):
 
     Lfs=[
         LF_distant_supervision,
-        LF_distant_supervision_and_words,
+        #LF_distant_supervision_and_words,
         LF_words_between,
         LF_words_left,
         LF_words_right,
@@ -262,22 +283,24 @@ def is_in_known_samples(predicate_resume,session,subject,object):
 def is_in_known_samples2(predicate_resume,session,subject_span, object_span):
     subject_span=get_clean_noun(subject_span)
     object_span=get_clean_noun(object_span)
-    subject_ngrams=get_ngrams(subject_span)
-    if len(subject_ngrams)>0:
-        for subject_ngram in subject_ngrams:
-            good_samples_by_subject=get_like_known_sample_by_subject(predicate_resume,session,subject_ngram[0])
-            for good_sample in good_samples_by_subject:
-                if are_nouns_similar(subject_span,good_sample.subject) \
-                and are_nouns_similar(object_span,good_sample.object):
-                    return True
-    object_ngrams=get_ngrams(object_span)
-    if len(object_ngrams)>0:
-        for object_ngram in object_ngrams:
-            good_samples_by_object=get_like_known_sample_by_object(predicate_resume,session,object_ngram[0])
-            for good_sample in good_samples_by_object:
-                if are_nouns_similar(subject_span,good_sample.subject) \
-                and are_nouns_similar(object_span,good_sample.object):
-                    return True
+
+    if subject_span==object_span:
+        return False
+
+    #search subject in subject sample
+    good_samples_by_subject=get_like_known_sample_by_subject(predicate_resume,session,subject_span)
+    for good_sample in good_samples_by_subject:
+        if are_nouns_similar(subject_span,good_sample.subject) \
+        and are_nouns_similar(object_span,good_sample.object):
+            return True
+
+    #search object in object sample
+    good_samples_by_object=get_like_known_sample_by_object(predicate_resume,session,object_span)
+    for good_sample in good_samples_by_object:
+        if are_nouns_similar(subject_span,good_sample.subject) \
+        and are_nouns_similar(object_span,good_sample.object):
+            return True
+
     return False
 
 def are_nouns_similar(noun1, noun2):
@@ -287,7 +310,7 @@ def are_nouns_similar(noun1, noun2):
     lev=levenshtein(noun1, noun2)
     hammingD=hamming(noun1, noun2)
     tsr=token_sort_ratio(noun1, noun2)
-    if lev > 0.36:
+    if lev > 0.45:
         return True
 
 
