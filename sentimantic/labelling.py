@@ -310,7 +310,7 @@ def are_nouns_similar(noun1, noun2):
     lev=levenshtein(noun1, noun2)
     hammingD=hamming(noun1, noun2)
     tsr=token_sort_ratio(noun1, noun2)
-    if lev > 0.45:
+    if lev > 0.42:
         return True
 
 
