@@ -47,18 +47,10 @@ def predicate_candidate_labelling(predicate_resume,  parallelism=8,  limit=None,
         #    replace_key_set=not alreadyExistsGroup
         L_train=labeler.apply(parallelism=parallelism, cids_query=cids_query,
                                 key_group=key_group, clear=True, replace_key_set=True)
-        L_train.lf_stats(session)
+        print(L_train.lf_stats(session))
+        logging.info(L_train.lf_stats(session))
 
-        gen_model = GenerativeModel()
-        gen_model.train(L_train, epochs=100, decay=0.95, step_size=0.1 / L_train.shape[0], reg_param=1e-6)
-        train_marginals = gen_model.marginals(L_train)
-        import matplotlib.pyplot as plt
-        plt.hist(train_marginals, bins=20)
-        plt.show()
-        plt.savefig()
-        gen_model.learned_lf_stats()
-        from snorkel.annotations import save_marginals
-        save_marginals(session, L_train, train_marginals)
+
 
     finally:
         logging.info("Finished labeling ")
@@ -111,10 +103,10 @@ def get_labelling_functions(predicate_resume):
                     if is_in_known_samples(predicate_resume,sentimantic_session,sample_subject,sample_object):
                         return 1
             #todo implement date
-            #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
+            #return -1 if len(words.intersection(c.get_parent().words)) < 1 and np.random.rand() < 0.15 else 0
             #return -1 if len(words.intersection(c.get_parent().words)) < 1 else 0
             return 0
-            #return -1 if np.random.rand() < 0.15 else 0
+            return -1 if np.random.rand() < 0.15 else 0
         except Exception as e:
             print(e)
             print("Not found candidate"+str(c.id))
@@ -122,12 +114,14 @@ def get_labelling_functions(predicate_resume):
 
     def LF_distant_supervision_and_words(c):
         try:
-
+            subject_span=getattr(c,"subject").get_span()
+            object_span=getattr(c,"object").get_span()
+            if subject_span==object_span:
+                return -1
             if (len(words.intersection(c.get_parent().words)) < 1 \
                     or len(not_words.intersection(get_between_tokens(c)))>0) :
                 return 0
-            subject_span=getattr(c,"subject").get_span()
-            object_span=getattr(c,"object").get_span()
+
             if subject_span==object_span:
                 return -1
             if is_in_known_samples(predicate_resume,sentimantic_session,subject_span,object_span):
@@ -177,7 +171,7 @@ def get_labelling_functions(predicate_resume):
         return -1 if len(not_words.intersection(get_between_tokens(c))) > 0 else 0
 
     def LF_no_word_in_sentence(c):
-        return -1 if np.random.rand() < 0.75 \
+        return -1 if np.random.rand() < 0.85 \
                      and len(words.intersection(c.get_parent().words)) == 0 else 0
 
     def LF_words_between(c):
