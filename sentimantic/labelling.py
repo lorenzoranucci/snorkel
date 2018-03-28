@@ -174,6 +174,20 @@ def get_labelling_functions(predicate_resume):
         return -1 if np.random.rand() < 0.85 \
                      and len(words.intersection(c.get_parent().words)) == 0 else 0
 
+    def LF_not_words_between(c):
+        if len(not_words.intersection(get_between_tokens(c))) > 0:
+            return 1
+        return 0
+    def LF_not_words_left(c):
+        if len(not_words.intersection(get_left_tokens(c))) > 0:
+            return 1
+        return 0
+    def LF_not_words_right(c):
+        if len(not_words.intersection(get_right_tokens(c))) > 0:
+            return 1
+        return 0
+
+
     def LF_words_between(c):
         if len(words.intersection(get_between_tokens(c))) > 0:
             return 1
@@ -216,7 +230,7 @@ def get_dbpedia_noun(ngrams, type):
                 response_subject=requests.get("http://lookup:1111/api/search/KeywordSearch",{"MaxHits":4,"QueryClass":type,"QueryString":noun})
                 response_ok=response_subject.ok
             except Exception:
-                time.sleep(5)
+                time.sleep(0.3)
 
         try:
             max_refcount=-1
