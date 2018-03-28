@@ -35,7 +35,14 @@ def train_disc_model(predicate_resume, parallelism=8):
     lstm.train(train_cands, train_marginals, X_dev=dev_cands, Y_dev=L_gold_dev, **train_kwargs)
     logging.info("Saving")
     _save_model(predicate_resume, lstm)
-
+    #test model
+    candidate_subclass=predicate_resume["candidate_subclass"]
+    test_cands  = session.query(candidate_subclass).filter(candidate_subclass.split == 2).order_by(candidate_subclass.id).all()
+    L_gold_test = get_gold_test_matrix(predicate_resume,session)
+    p, r, f1 = lstm.score(test_cands, L_gold_test)
+    print("Prec: {0:.3f}, Recall: {1:.3f}, F1 Score: {2:.3f}".format(p, r, f1))
+    logging.info("Prec: {0:.3f}, Recall: {1:.3f}, F1 Score: {2:.3f}".format(p, r, f1))
+    lstm.save_marginals(session, test_cands)
 
 
 def _save_model(predicate_resume,lstm):
