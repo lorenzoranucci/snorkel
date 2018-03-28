@@ -21,18 +21,19 @@ def train_disc_model(predicate_resume, parallelism=8):
         'n_epochs':   10,
         'dropout':    0.25,
         'print_freq': 1,
-        'max_sentence_length': 400
+        'max_sentence_length': 100
     }
 
     logging.info("Querying train cands")
-    train_cands = get_train_cands_with_marginals_and_span(predicate_resume, session).all()
+    candidate_subclass=predicate_resume["candidate_subclass"]
+    train_cands = session.query(candidate_subclass).filter(candidate_subclass.split == 0).order_by(candidate_subclass.id).all()#get_train_cands_with_marginals_and_span(predicate_resume, session).all()
     logging.info("Querying dev cands")
     dev_cands = get_dev_cands_with_span(predicate_resume, session).all()
     logging.info("Querying gold labels")
     L_gold_dev = get_gold_dev_matrix(predicate_resume, session)
     logging.info("Training")
     lstm = reRNN(seed=1701, n_threads=int(parallelism))
-    lstm.train(train_cands, train_marginals, X_dev=dev_cands, Y_dev=L_gold_dev, **train_kwargs)
+    lstm.train(train_cands, train_marginals, **train_kwargs)
     logging.info("Saving")
     _save_model(predicate_resume, lstm)
     #test model
