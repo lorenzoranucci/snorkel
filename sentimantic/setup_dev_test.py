@@ -8,11 +8,13 @@ from brat_collection_creator import create_collection
 
 def setup_dev(predicate_resume,dump_folder_path="./data/dev/", lang="en", parallelism=1):
     logging.info("Starting dev setup")
-    return setup(predicate_resume ,dump_folder_path,lang,1,parallelism=parallelism)
+    if predicate_resume["configs"]["dev_pages"] is not None:
+        return setup(predicate_resume ,dump_folder_path,lang,1,parallelism=parallelism)
 
 def setup_test(predicate_resume, dump_folder_path="./data/test/", lang="en", parallelism=1):
     logging.info("Starting test setup")
-    return setup(predicate_resume ,dump_folder_path,lang,2,parallelism=parallelism)
+    if predicate_resume["configs"]["test_pages"] is not None:
+        return setup(predicate_resume ,dump_folder_path,lang,2,parallelism=parallelism)
 
 def setup(predicate_resume,  dump_folder_path, lang, split, parallelism=1):
     if split==1:
