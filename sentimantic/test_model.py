@@ -149,9 +149,9 @@ def score_lfs(predicate_resume, L_gold_test,  session, date_time,parallelism=8):
     test_marginals = gen_model.marginals(L_test)
 
     dump_file_path2="./results/"+"plt_1_"+predicate_resume["predicate_name"]+date_time+".csv"
-    plt.hist(test_marginals, bins=20)
-    plt.savefig(dump_file_path2)
-    plt.show()
+    #plt.hist(test_marginals, bins=20)
+    #plt.savefig(dump_file_path2)
+    #plt.show()
 
 
     dump_file_path3="./results/"+"gen_2_"+predicate_resume["predicate_name"]+date_time+".csv"
