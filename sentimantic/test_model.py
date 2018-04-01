@@ -135,8 +135,7 @@ def score_lfs(predicate_resume, L_gold_test,  session, date_time,parallelism=8):
     gen_model.train(L_test, epochs=100, decay=0.95, step_size=0.1 / L_test.shape[0], reg_param=1e-6)
 
 
-    test_cands=test_cids_query.all()
-    p, r, f1 = gen_model.score(test_cands, L_gold_test)
+    p, r, f1 = gen_model.score(L_test, L_gold_test)
     print("Prec: {0:.3f}, Recall: {1:.3f}, F1 Score: {2:.3f}".format(p, r, f1))
     logging.info("Prec: {0:.3f}, Recall: {1:.3f}, F1 Score: {2:.3f}".format(p, r, f1))
     dump_file_path1="./results/"+"test_gen_1_"+predicate_resume["predicate_name"]+date_time+".csv"
