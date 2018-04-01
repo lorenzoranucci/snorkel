@@ -13,15 +13,25 @@ predicates:
       - 'died'
       - 'death'
     dev_pages:
-      - 'Zinedine Zidane'
-      - 'Elon Musk'
-      - 'Linus Torvalds'
-      - 'Kevin Campbell'
     test_pages:
       - 'George Roger Waters'
       - 'Thomas Jefferson'
       - 'Rita Levi-Montalcini'
       - 'Anthony Kiedis'
+      - 'Zinedine Zidane'
+      - 'Elon Musk'
+      - 'Linus Torvalds'
+      - 'Kevin Campbell'
+      - 'Andrew Jackson'
+      - 'Francesco Totti'
+      - 'George Washington'
+      - 'Grover Cleveland'
+      - 'John Quincy Adams'
+      - 'Roger Waters'
+      - 'Alessandro Del Piero'
+      - 'Archie Roe'
+      - 'Dave Halliday'
+      - 'Mark Flatts'
   - name: 'spouse'
     samples_download: true
     uri: 'http://dbpedia.org/ontology/spouse'
@@ -51,39 +61,57 @@ predicates:
       - 'secretary'
       - 'co-worker'
     dev_pages:
-      - 'Zinedine Zidane'
-      - 'Elon Musk'
-      - 'Linus Torvalds'
-      - 'Kevin Campbell'
     test_pages:
       - 'George Roger Waters'
       - 'Thomas Jefferson'
       - 'Rita Levi-Montalcini'
       - 'Anthony Kiedis'
-  - name: 'team'
-    samples_download: true
-    uri: 'http://dbpedia.org/ontology/team'
-    words:
-      - 'played'
-      - 'signed'
-      - 'sign'
-      - 'transfer'
-      - 'transferred'
-    not_words:
-      - 'live'
-      - 'against'
-    dev_pages:
       - 'Zinedine Zidane'
       - 'Elon Musk'
       - 'Linus Torvalds'
       - 'Kevin Campbell'
-    test_pages:
-      - 'George Roger Waters'
-      - 'Thomas Jefferson'
-      - 'Rita Levi-Montalcini'
-      - 'Anthony Kiedis'
-
-
+      - 'Andrew Jackson'
+      - 'Francesco Totti'
+      - 'George Washington'
+      - 'Grover Cleveland'
+      - 'John Quincy Adams'
+      - 'Roger Waters'
+      - 'Alessandro Del Piero'
+      - 'Archie Roe'
+      - 'Dave Halliday'
+      - 'Mark Flatts'
+#  - name: 'team'
+#    samples_download: true
+#    uri: 'http://dbpedia.org/ontology/team'
+#    words:
+#      - 'played'
+#      - 'signed'
+#      - 'sign'
+#      - 'transfer'
+#      - 'transferred'
+#    not_words:
+#      - 'live'
+#      - 'against'
+#    dev_pages:
+#    test_pages:
+#      - 'George Roger Waters'
+#      - 'Thomas Jefferson'
+#      - 'Rita Levi-Montalcini'
+#      - 'Anthony Kiedis'
+#      - 'Zinedine Zidane'
+#      - 'Elon Musk'
+#      - 'Linus Torvalds'
+#      - 'Kevin Campbell'
+#      - 'Andrew Jackson'
+#      - 'Francesco Totti'
+#      - 'George Washington'
+#      - 'Grover Cleveland'
+#      - 'John Quincy Adams'
+#      - 'Roger Waters'
+#      - 'Alessandro Del Piero'
+#      - 'Archie Roe'
+#      - 'Dave Halliday'
+#      - 'Mark Flatts'
 
 
 
