@@ -10,7 +10,7 @@ from os import mkdir
 import csv
 from time import gmtime, strftime
 
-from labelling import are_nouns_similar
+from textacy.similarity  import  levenshtein
 from xml.dom import minidom
 import time
 import requests
@@ -277,3 +277,9 @@ def get_dbpedia_node(noun,type):
             print("error")
 
     return None
+
+def are_nouns_similar(noun1, noun2):
+    # jaccard, jaro_winkler, hamming, token_sort_ratio
+    lev=levenshtein(noun1, noun2)
+    if lev > 0.72:
+        return True
