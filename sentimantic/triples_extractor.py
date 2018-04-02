@@ -14,13 +14,13 @@ def extract_triples(predicate_resume, disc_model_name=None):
     date_time=strftime("%Y-%m-%d_%H_%M_%S", gmtime())
     session = SnorkelSession()
     if disc_model_name is None:
-        model_name="D"+predicate_resume["predicate_name"]+"Latest"
-    test_cands_query  = get_train_cids_with_span(predicate_resume,session)
+        disc_model_name="D"+predicate_resume["predicate_name"]+"Latest"
+    test_cands_query  = get_test_cids_with_span(predicate_resume,session)
 
     test_cands=test_cands_query.all()
     lstm = reRNN()
     logging.info("Loading marginals ")
-    lstm.load(model_name)
+    lstm.load(disc_model_name)
 
     predictions=lstm.predictions(test_cands)
     dump_file_path3="./results/"+"triples_"+predicate_resume["predicate_name"]+date_time+".csv"
