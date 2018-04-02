@@ -19,7 +19,7 @@ from models import *
 from snorkel.models import LabelKey
 
 
-def predicate_candidate_labelling(predicate_resume,  parallelism=8,  limit=None, replace_key_set=False):
+def predicate_candidate_labelling(predicate_resume,  parallelism=1,  limit=None, replace_key_set=False):
     logging.info("Starting labeling ")
     session = SnorkelSession()
     try:
@@ -318,6 +318,7 @@ def are_nouns_similar(noun1, noun2):
     lev=levenshtein(noun1, noun2)
     hammingD=hamming(noun1, noun2)
     tsr=token_sort_ratio(noun1, noun2)
+    dice=dice_coefficient(noun1,noun2)
     if lev > 0.42:
         return True
 
@@ -333,3 +334,22 @@ def get_like_known_sample_by_object(predicate_resume,session,noun):
     return session.query(sample_class). \
         filter(sample_class.object.like("%"+noun+"%")). \
         all()
+
+def dice_coefficient(a, b):
+    """dice coefficient 2nt/na + nb."""
+    if not len(a) or not len(b): return 0.0
+    if len(a) == 1:  a=a+u'.'
+    if len(b) == 1:  b=b+u'.'
+
+    a_bigram_list=[]
+    for i in range(len(a)-1):
+        a_bigram_list.append(a[i:i+2])
+    b_bigram_list=[]
+    for i in range(len(b)-1):
+        b_bigram_list.append(b[i:i+2])
+
+    a_bigrams = set(a_bigram_list)
+    b_bigrams = set(b_bigram_list)
+    overlap = len(a_bigrams & b_bigrams)
+    dice_coeff = overlap * 2.0/(len(a_bigrams) + len(b_bigrams))
+    return dice_coeff
