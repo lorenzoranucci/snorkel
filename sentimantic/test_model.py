@@ -10,6 +10,12 @@ from os import mkdir
 import csv
 from time import gmtime, strftime
 
+from labelling import are_nouns_similar
+from xml.dom import minidom
+import time
+import requests
+
+
 def test_model(predicate_resume,gen_model_name=None, disc_model_name=None, parallelism=1):
     try:
         mkdir("./results")
@@ -38,14 +44,14 @@ def score_disc_model(predicate_resume, L_gold_test, session, date_time, disc_mod
 
 
     if disc_model_name is None:
-        model_name="D"+predicate_resume["predicate_name"]+"Latest"
+        disc_model_name="D"+predicate_resume["predicate_name"]+"Latest"
     candidate_subclass=predicate_resume["candidate_subclass"]
     test_cands_query  = session.query(candidate_subclass).filter(candidate_subclass.split == 2).order_by(candidate_subclass.id)
 
     test_cands=test_cands_query.all()
     lstm = reRNN()
     logging.info("Loading marginals ")
-    lstm.load(model_name)
+    lstm.load(disc_model_name)
     #lstm.save_marginals(session, test_cands)
 
 
@@ -106,7 +112,31 @@ def score_disc_model(predicate_resume, L_gold_test, session, date_time, disc_mod
             i=i+1
 
 
+    dump_file_path4="./results/"+"triples_"+predicate_resume["predicate_name"]+date_time+".csv"
 
+
+    subject_type=predicate_resume["subject_type"]
+    object_type=predicate_resume["object_type"]
+    subject_type_split = subject_type.split('/')
+    object_type_split = object_type.split('/')
+    subject_type_end=subject_type_split[len(subject_type_split)-1]
+    object_type_end=object_type_split[len(object_type_split)-1]
+    with open(dump_file_path4, 'w+b') as f:
+        writer = csv.writer(f, delimiter=',',
+                            quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(["text","marginal","prediction"])
+        i=0
+        for c in test_cands:
+            if predictions[i]==1:
+                subject_span=getattr(c,"subject").get_span()
+                object_span=getattr(c,"object").get_span()
+                subject_uri = get_dbpedia_node(subject_span,subject_type_end)
+                object_uri = get_dbpedia_node(object_span,object_type_end)
+                predicate_uri=predicate_resume["predicate_URI"]
+                if subject_uri is not None and object_uri is not None:
+                    row=[str(subject_uri),str(predicate_uri),str(object_uri)]
+                    writer.writerow(row)
+            i=i+1
 
 
 
@@ -217,3 +247,33 @@ def load_ltrain(predicate_resume, session):
     return L_train
 
 
+
+def get_dbpedia_node(noun,type):
+    response_ok=False
+    while response_ok==False:
+        try:
+            response_subject=requests.get("http://lookup:1111/api/search/KeywordSearch",{"MaxHits":4,"QueryClass":type,"QueryString":noun})
+            response_ok=response_subject.ok
+        except Exception:
+            time.sleep(0.3)
+
+        try:
+            max_refcount=-1
+            xml=response_subject.content
+            xml=minidom.parseString(xml)
+            result_elements=xml.getElementsByTagName('Result')
+            for result_element in result_elements:
+                #check refcount
+                current_refcount=int(result_element.getElementsByTagName('Refcount')[0].firstChild.nodeValue)
+                if max_refcount==-1:
+                    max_refcount= current_refcount
+                if current_refcount < (max_refcount/10):
+                    break
+                label =result_element.getElementsByTagName('Label')[0].firstChild.nodeValue
+                uri =result_element.getElementsByTagName('URI')[0].firstChild.nodeValue
+                if are_nouns_similar(label,noun):
+                    return uri
+        except:
+            print("error")
+
+    return None
