@@ -14,6 +14,7 @@ from train_gen_model import train_gen_model
 from train_disc_model import train_disc_model
 from test_model import test_model
 from setup_dev_test import setup_dev, setup_test
+from triples_extractor import extract_triples
 
 logging.basicConfig(filename='sentimantic.log',level=logging.INFO, format='%(asctime)s %(message)s')
 dump_file_dir="../../data/wikipedia/dump/en/extracted_text/AA/"
@@ -30,6 +31,7 @@ is_to_train_gen_classifier=False
 is_to_train_disc_classifier=False
 is_to_test_classifier=False
 is_to_setup=False
+is_to_extract_triples=False
 i=0
 for arg in sys.argv:
     if arg.strip()=='parse':
@@ -50,6 +52,8 @@ for arg in sys.argv:
         is_to_train_disc_classifier=True
     elif arg.strip()=='test':
         is_to_test_classifier=True
+    elif arg.strip()=='triples':
+        is_to_extract_triples=True
     elif arg.strip()=='parallelism':
         parallelism=sys.argv[i+1]
     elif arg.strip()=='limit':
@@ -98,8 +102,11 @@ def start_predicate_domain_range_pipeline(predicate_resume):
         train_gen_model(predicate_resume, parallelism=parallelism)
     if is_to_train_disc_classifier:
         train_disc_model(predicate_resume, parallelism=parallelism)
+    if is_to_extract_triples:
+        extract_triples(predicate_resume)
     if is_to_test_classifier:
         test_model(predicate_resume)
+
 
 
 
