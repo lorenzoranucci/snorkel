@@ -252,7 +252,8 @@ def get_cands_with_span(predicate_resume,session, split,only_id=False, with_marg
     query=query. \
         filter(candidate_subclass.split == split). \
         filter(candidate_subclass.subject_id.in_(subquery)). \
-        filter(candidate_subclass.object_id.in_(subquery))
+        filter(candidate_subclass.object_id.in_(subquery)). \
+        order_by(candidate_subclass.id)
     return query
 
 
